@@ -1,0 +1,582 @@
+---
+title: "Variation partitioning predicting the last survey"
+author: "Rodolfo Pelinson"
+date: "`r Sys.Date()`"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE, echo = FALSE, include=FALSE}
+dir<-("C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly")
+```
+
+```{r}
+source(paste(sep = "/",dir,"functions/remove_sp.R"))
+source(paste(sep = "/",dir,"functions/varpart_manyglm.R"))
+source(paste(sep = "/",dir,"functions/R2_manyglm.R"))
+```
+
+```{r, message = FALSE, warning = FALSE}
+library(vegan)
+library(gllvm)
+library(mvabund)
+```
+
+```{r,  warning=FALSE, message = FALSE}
+source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
+```
+
+
+Organizing the predictor community states and the response (the last survey.)
+
+```{r}
+comm_AM1 <- remove_sp(communities_AM1, 3)
+comm_AM2 <- remove_sp(communities_AM2, 3)
+comm_AM3 <- remove_sp(communities_AM3, 3)
+comm_AM4 <- remove_sp(communities_AM4, 3)
+
+comm_AM1_drop_atrasado <- comm_AM1[Exp_design$treatments != "atrasado",]
+comm_AM2_drop_atrasado <- comm_AM2[Exp_design$treatments != "atrasado",]
+comm_AM3_drop_atrasado <- comm_AM3[Exp_design$treatments != "atrasado",]
+comm_AM4_drop_atrasado <- comm_AM4[Exp_design$treatments != "atrasado",]
+
+Exp_design_drop_atrasado <- Exp_design[Exp_design$treatments != "atrasado",]
+
+Env_AM4_drop_atrasado <- Env[Env$Tratamento != "atrasado" & Env$amostragem == "4",]
+Env_AM4_drop_atrasado <- Env_AM4_drop_atrasado[match(Exp_design_drop_atrasado$sites, Env_AM4_drop_atrasado$id),]
+
+colnames(comm_AM1_drop_atrasado) <- gsub(" ", "_", colnames(comm_AM1_drop_atrasado))
+colnames(comm_AM2_drop_atrasado) <- gsub(" ", "_", colnames(comm_AM2_drop_atrasado))
+colnames(comm_AM3_drop_atrasado) <- gsub(" ", "_", colnames(comm_AM3_drop_atrasado))
+colnames(comm_AM4_drop_atrasado) <- gsub(" ", "_", colnames(comm_AM4_drop_atrasado))
+
+block <- data.frame(block2 = Exp_design_drop_atrasado$block2)
+comm_AM1_pred <- decostand(comm_AM1_drop_atrasado, method = "total", MARGIN = 2)
+comm_AM2_pred <- decostand(comm_AM2_drop_atrasado, method = "total", MARGIN = 2)
+comm_AM3_pred <- decostand(comm_AM3_drop_atrasado, method = "total", MARGIN = 2)
+
+comm_AM1_pred_st <- decostand(comm_AM1_drop_atrasado, method = "stand")
+comm_AM2_pred_st <- decostand(comm_AM2_drop_atrasado, method = "stand")
+comm_AM3_pred_st <- decostand(comm_AM3_drop_atrasado, method = "stand")
+
+set.seed(1); nmds_prior_AM1 <- metaMDS(comm_AM1_pred, distance  = "bray", k = 3)
+comm_nmds_AM1 <- data.frame(nmds_prior_AM1$points)
+comm_AM1_pred_nmds <- decostand(comm_nmds_AM1, method = "stand")
+
+set.seed(1); nmds_prior_AM2 <- metaMDS(comm_AM2_pred, distance  = "bray", k = 3)
+comm_nmds_AM2 <- data.frame(nmds_prior_AM2$points)
+comm_AM2_pred_nmds <- decostand(comm_nmds_AM2, method = "stand")
+
+set.seed(1); nmds_prior_AM3 <- metaMDS(comm_AM3_pred, distance  = "bray", k = 3)
+comm_nmds_AM3 <- data.frame(nmds_prior_AM3$points)
+comm_AM3_pred_nmds <- decostand(comm_nmds_AM3, method = "stand")
+
+Env_st_AM4 <- decostand(Env_AM4_drop_atrasado[,c(6:7,9:11)], method = "stand")
+pca_env_AM4 <- rda(Env_st_AM4)
+Env_st_AM4_pca <- data.frame(pca_env_AM4$CA$u[,1:3])
+Env_st_AM4_pca <- decostand(Env_st_AM4_pca, method = "stand")
+
+preds_AM1_reduced <- list(Block = block, Env = Env_st_AM4_pca, Prior = comm_AM1_pred_nmds)
+preds_AM2_reduced <- list(Block = block, Env = Env_st_AM4_pca, Prior = comm_AM2_pred_nmds)
+preds_AM3_reduced <- list(Block = block, Env = Env_st_AM4_pca, Prior = comm_AM3_pred_nmds)
+
+preds_AM1 <- list(Block = block, Env = Env_st_AM4, Prior = comm_AM1_pred_st)
+preds_AM2 <- list(Block = block, Env = Env_st_AM4, Prior = comm_AM2_pred_st)
+preds_AM3 <- list(Block = block, Env = Env_st_AM4, Prior = comm_AM3_pred_st)
+
+lapply(preds_AM1_reduced, nrow)
+```
+
+
+Variation partitioning using the first survey as a predictor.
+
+```{r, eval=FALSE, echo=FALSE}
+varpart_priority_AM1 <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM1, DF_adj_r2 = FALSE)
+varpart_priority_AM1$R2_fractions_com
+
+anova_priority_AM1 <- anova(varpart_priority_AM1$models$`Block-Env`, varpart_priority_AM1$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+
+```
+
+```{r}
+varpart_priority_AM1_reduced <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM1_reduced, DF_adj_r2 = FALSE)
+varpart_priority_AM1_reduced$R2_fractions_com
+
+anova_priority_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Env`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_priority_AM1_reduced
+
+anova_env_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_env_AM1_reduced
+
+anova_block_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Env-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_block_AM1_reduced
+```
+
+
+Variation partitioning using the second survey as a predictor.
+
+
+```{r, eval=FALSE, echo=FALSE}
+
+varpart_priority_AM2 <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM2, DF_adj_r2 = FALSE)
+varpart_priority_AM2$R2_fractions_com
+
+
+anova_priority_AM2 <- anova(varpart_priority_AM2$models$`Block-Env`, varpart_priority_AM2$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+
+```
+
+```{r}
+
+varpart_priority_AM2_reduced <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM2_reduced, DF_adj_r2 = FALSE)
+varpart_priority_AM2_reduced$R2_fractions_com
+
+anova_priority_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Block-Env`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_priority_AM2_reduced
+
+anova_env_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Block-Prior`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_env_AM2_reduced
+
+anova_block_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Env-Prior`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_block_AM2_reduced
+```
+
+
+
+
+
+Variation partitioning using the third survey as a predictor.
+
+```{r}
+
+varpart_priority_AM3_reduced <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM3_reduced, DF_adj_r2 = FALSE)
+varpart_priority_AM3_reduced$R2_fractions_com
+
+anova_priority_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Block-Env`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_priority_AM3_reduced
+
+anova_env_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Block-Prior`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_env_AM3_reduced
+
+anova_block_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Env-Prior`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_block_AM3_reduced
+
+
+
+```
+
+
+
+```{r, eval=FALSE, echo=FALSE}
+
+varpart_priority_AM3 <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM3, DF_adj_r2 = FALSE)
+varpart_priority_AM3$R2_fractions_com
+
+anova_priority_AM3 <- anova(varpart_priority_AM3$models$`Block-Env`, varpart_priority_AM3$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+
+
+```
+
+
+```{r, fig.width = 3, fig.height = 2.5, dpi = 600, dev.args= list(pointsize=9)}
+cols <- c("#98DF8A", "#9EDAE5", "#F7B6D2")
+names(cols) <- c("Block", "Env", "Priority")
+
+
+#svg(file = "C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly/Plots/Community structure analysis/prior_effec_time.svg", width = 3, height = 2.5, pointsize = 9)
+
+
+par(mar = c(4,4,1,1), bty = "l")
+plot(NA,xlim = c(42-5, 126 + 5), ylim = c(0, 0.5), xaxt = "n", yaxt = "n", ylab = "", xlab = "")
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,1]), col = cols[3], lwd = 3)
+
+
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,2]), col = cols[3], lwd = 3)
+
+
+
+
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,1]), col = cols[3], pch = c(16,16,16), cex = 2)
+
+
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,2]), col = cols[3], pch = c(21,21,21), cex = 2, lwd = 2)
+
+
+
+axis(2, las = 2, line = 0, labels = TRUE)
+axis(1, at = c(158 - 116, 158 - 80, 158 - 32),cex.axis = 1.25)
+
+title(xlab = "Distance to the last survey (days)", cex.lab = 1.25)
+title(ylab = "Partial Likelihood ratio R²", cex.lab = 1.25)
+
+#dev.off()
+
+```
+
+
+
+
+
+```{r, eval=FALSE, echo=FALSE}
+cols <- c("#98DF8A", "#9EDAE5", "#F7B6D2")
+names(cols) <- c("Block", "Env", "Priority")
+
+par(mar = c(4,4,1,1), bty = "l")
+plot(NA,xlim = c(42-5, 126 + 5), ylim = c(0, 0.8), xaxt = "n", yaxt = "n", ylab = "", xlab = "")
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3$R2_fractions_com[3,1],
+                                                  varpart_priority_AM2$R2_fractions_com[3,1],
+                                                  varpart_priority_AM1$R2_fractions_com[3,1]), col = cols[3], lwd = 3)
+
+
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3$R2_fractions_com[3,2],
+                                                  varpart_priority_AM2$R2_fractions_com[3,2],
+                                                  varpart_priority_AM1$R2_fractions_com[3,2]), col = cols[3], lwd = 3)
+
+
+
+
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3$R2_fractions_com[3,1],
+                                                  varpart_priority_AM2$R2_fractions_com[3,1],
+                                                  varpart_priority_AM1$R2_fractions_com[3,1]), col = cols[3], pch = c(16,16,16), cex = 2)
+
+
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3$R2_fractions_com[3,2],
+                                                  varpart_priority_AM2$R2_fractions_com[3,2],
+                                                  varpart_priority_AM1$R2_fractions_com[3,2]), col = cols[3], pch = c(21,21,21), cex = 2, lwd = 2)
+
+
+
+axis(2, las = 2, line = 0, labels = TRUE)
+axis(1, at = c(158 - 116, 158 - 80, 158 - 32),cex.axis = 1.25)
+
+title(xlab = "Distance to the last survey (days)", cex.lab = 1.25)
+title(ylab = "Likelihood ratio R²", cex.lab = 1.25)
+```
+
+
+
+
+Ploting species interactions:
+```{r, eval=FALSE, echo=FALSE}
+library(vegan)
+
+
+#Trying to plot interactions
+#From the full model
+coefs <- varpart_priority_AM1$models$`Block-Env-Prior`$coefficients[-c(1:8),]
+
+LCI_coef <- coefs - varpart_priority_AM1$models$`Block-Env-Prior`$stderr.coefficients[-c(1:8),]  * 1.96
+UCI_coef <- coefs + varpart_priority_AM1$models$`Block-Env-Prior`$stderr.coefficients[-c(1:8),]  * 1.96
+
+
+sig_coefs <- coefs
+
+for(i in 1:nrow(coefs)){
+  for(j in 1:ncol(coefs)){
+    if(LCI_coef[i,j] < 0 & UCI_coef[i,j] < 0){
+        sig_coefs[i,j] <- coefs[i,j]
+    }else{if(LCI_coef[i,j] > 0 & UCI_coef[i,j] > 0){
+        sig_coefs[i,j] <- coefs[i,j]
+    }else{sig_coefs[i,j] <- 0}
+        
+      }
+  }
+}
+
+#sig_coefs[sig_coefs < -10] <- -4
+#sig_coefs[sig_coefs > 10] <- 4
+
+
+sig_coef_non_neg <- sig_coefs + abs(min(sig_coefs))
+
+RA <- decorana(sig_coef_non_neg)
+ord_rows <- order(RA$rproj[,1])
+ord_cols <- order(RA$cproj[,1])
+
+sig_coefs <- sig_coefs[ord_rows,ord_cols]
+
+
+min <- min(sig_coefs)
+max <- max(sig_coefs)
+
+
+library(yarrr)
+
+#pdf(file = "C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly/Plots/Community structure analysis/species_effects.pdf", width = 6, height = 5, pointsize = 10)
+
+
+close.screen(all.screens = TRUE)
+split.screen(matrix(c(0,0.85,0,1,
+                      0.85,1,0,1), ncol = 4, nrow = 2, byrow = TRUE))
+
+
+par(mar = c(10,10,1,1))
+maxabs <- max(abs(sig_coefs), na.rm = TRUE)   # ou maxabs <- 180
+ncol <- 200
+generator_col <- colorRampPalette(c(colors = "firebrick", "white", "royalblue"))(ncol)
+
+breaks <- seq(-maxabs, maxabs, length.out = ncol + 1)
+
+
+image( y = 1:nrow(sig_coefs), x = 1:ncol(sig_coefs),z = t(sig_coefs), col = generator_col, xaxt = "n", yaxt = "n", xlab = "", ylab = "", breaks = breaks)
+#par(new = TRUE)
+#image( y = 1:nrow(sig_coefs), x = 1:ncol(sig_coefs),z = t(sig_coefs), col = transparent(c("#FF9896", "white", "#9EDAE5" ), trans.val = 0.1), xaxt = "n", yaxt = "n", xlab = "", ylab = "")
+box(bty = "o")
+
+ynames <- rownames(sig_coefs)
+ynames <- gsub("\\."," ", ynames)
+yat_1 <- which(ynames == "Chironominae" | ynames == "Tanypodinae")
+yat_3 <- which(ynames != "Chironominae" & ynames != "Tanypodinae")
+
+xnames <- colnames(sig_coefs)
+xnames <- gsub("\\."," ", xnames)
+xat_1 <- which(xnames == "Chironominae" | xnames == "Tanypodinae")
+xat_3 <- which(xnames != "Chironominae" & xnames != "Tanypodinae")
+
+axis(2, at = yat_1, labels = ynames[yat_1], las = 2, cex.axis = 0.8, font = 1)
+axis(2, at = yat_3, labels = ynames[yat_3], las = 2, cex.axis = 0.8, font = 3)
+
+axis(1, at = xat_1, labels = xnames[xat_1], las = 2, cex.axis = 0.8, font = 1)
+axis(1, at = xat_3, labels = xnames[xat_3], las = 2, cex.axis = 0.8, font = 3)
+
+title(xlab = "Taxa affected", line = 9, cex.lab = 1.25)
+title(ylab = "Taxa affecting", line = 9, cex.lab = 1.25)
+
+screen(2)
+par(mar = c(10,2.5,1,2.5), bty = "o")
+image( y = 1:length(seq(from = min, to = max, by = 0.18)), x = 1 ,z = t(as.matrix(seq(from = min, to = max, by = 0.18))), col = generator_col, xaxt = "n", yaxt = "n", xlab = "", ylab = "", breaks = breaks)
+axis(2,
+     at = seq(from = 1, to = length(seq(from = min, to = max, by = 0.18)), by = 1),
+     labels = pretty(seq(from = min, to = max, length.out = 14), 19), las = 2)
+box()
+
+
+
+#dev.off()
+```
+
+
+
+
+
+
+
+Ploting species interactions:
+```{r, eval=FALSE, echo=FALSE}
+library(vegan)
+
+
+#Trying to plot interactions
+#From the full model
+coefs <- varpart_priority_AM2$models$`Block-Env-Prior`$coefficients[-c(1:8),]
+
+LCI_coef <- coefs - varpart_priority_AM2$models$`Block-Env-Prior`$stderr.coefficients[-c(1:8),]  * 1.96
+UCI_coef <- coefs + varpart_priority_AM2$models$`Block-Env-Prior`$stderr.coefficients[-c(1:8),]  * 1.96
+
+
+sig_coefs <- coefs
+
+for(i in 1:nrow(coefs)){
+  for(j in 1:ncol(coefs)){
+    if(LCI_coef[i,j] < 0 & UCI_coef[i,j] < 0){
+        sig_coefs[i,j] <- coefs[i,j]
+    }else{if(LCI_coef[i,j] > 0 & UCI_coef[i,j] > 0){
+        sig_coefs[i,j] <- coefs[i,j]
+    }else{sig_coefs[i,j] <- 0}
+        
+      }
+  }
+}
+
+#sig_coefs[sig_coefs < -10] <- -4
+#sig_coefs[sig_coefs > 10] <- 4
+
+
+sig_coef_non_neg <- sig_coefs + abs(min(sig_coefs))
+
+RA <- decorana(sig_coef_non_neg)
+ord_rows <- order(RA$rproj[,1])
+ord_cols <- order(RA$cproj[,1])
+
+sig_coefs <- sig_coefs[ord_rows,ord_cols]
+
+
+min <- min(sig_coefs)
+max <- max(sig_coefs)
+
+
+library(yarrr)
+
+#pdf(file = "C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly/Plots/Community structure analysis/species_effects.pdf", width = 6, height = 5, pointsize = 10)
+
+
+close.screen(all.screens = TRUE)
+split.screen(matrix(c(0,0.85,0,1,
+                      0.85,1,0,1), ncol = 4, nrow = 2, byrow = TRUE))
+
+
+par(mar = c(10,10,1,1))
+maxabs <- max(abs(sig_coefs), na.rm = TRUE)   # ou maxabs <- 180
+ncol <- 200
+generator_col <- colorRampPalette(c(colors = "firebrick", "white", "royalblue"))(ncol)
+
+breaks <- seq(-maxabs, maxabs, length.out = ncol + 1)
+
+
+image( y = 1:nrow(sig_coefs), x = 1:ncol(sig_coefs),z = t(sig_coefs), col = generator_col, xaxt = "n", yaxt = "n", xlab = "", ylab = "", breaks = breaks)
+#par(new = TRUE)
+#image( y = 1:nrow(sig_coefs), x = 1:ncol(sig_coefs),z = t(sig_coefs), col = transparent(c("#FF9896", "white", "#9EDAE5" ), trans.val = 0.1), xaxt = "n", yaxt = "n", xlab = "", ylab = "")
+box(bty = "o")
+
+ynames <- rownames(sig_coefs)
+ynames <- gsub("\\."," ", ynames)
+yat_1 <- which(ynames == "Chironominae" | ynames == "Tanypodinae")
+yat_3 <- which(ynames != "Chironominae" & ynames != "Tanypodinae")
+
+xnames <- colnames(sig_coefs)
+xnames <- gsub("\\."," ", xnames)
+xat_1 <- which(xnames == "Chironominae" | xnames == "Tanypodinae")
+xat_3 <- which(xnames != "Chironominae" & xnames != "Tanypodinae")
+
+axis(2, at = yat_1, labels = ynames[yat_1], las = 2, cex.axis = 0.8, font = 1)
+axis(2, at = yat_3, labels = ynames[yat_3], las = 2, cex.axis = 0.8, font = 3)
+
+axis(1, at = xat_1, labels = xnames[xat_1], las = 2, cex.axis = 0.8, font = 1)
+axis(1, at = xat_3, labels = xnames[xat_3], las = 2, cex.axis = 0.8, font = 3)
+
+title(xlab = "Taxa affected", line = 9, cex.lab = 1.25)
+title(ylab = "Taxa affecting", line = 9, cex.lab = 1.25)
+
+screen(2)
+par(mar = c(10,2.5,1,2.5), bty = "o")
+image( y = 1:length(seq(from = min, to = max, by = 0.18)), x = 1 ,z = t(as.matrix(seq(from = min, to = max, by = 0.18))), col = generator_col, xaxt = "n", yaxt = "n", xlab = "", ylab = "", breaks = breaks)
+axis(2,
+     at = seq(from = 1, to = length(seq(from = min, to = max, by = 0.18)), by = 1),
+     labels = pretty(seq(from = min, to = max, length.out = 18), 15), las = 2)
+box()
+
+
+#dev.off()
+```
+
+
+
+
+
+
+
+
+Ploting species interactions:
+```{r, eval=FALSE, echo=FALSE}
+library(vegan)
+
+
+#Trying to plot interactions
+#From the full model
+coefs <- varpart_priority_AM3$models$`Block-Env-Prior`$coefficients[-c(1:8),]
+
+LCI_coef <- coefs - varpart_priority_AM3$models$`Block-Env-Prior`$stderr.coefficients[-c(1:8),]  * 1.96
+UCI_coef <- coefs + varpart_priority_AM3$models$`Block-Env-Prior`$stderr.coefficients[-c(1:8),]  * 1.96
+
+
+sig_coefs <- coefs
+
+for(i in 1:nrow(coefs)){
+  for(j in 1:ncol(coefs)){
+    if(LCI_coef[i,j] < 0 & UCI_coef[i,j] < 0){
+        sig_coefs[i,j] <- coefs[i,j]
+    }else{if(LCI_coef[i,j] > 0 & UCI_coef[i,j] > 0){
+        sig_coefs[i,j] <- coefs[i,j]
+    }else{sig_coefs[i,j] <- 0}
+        
+      }
+  }
+}
+
+#sig_coefs[sig_coefs < -10] <- -4
+#sig_coefs[sig_coefs > 10] <- 4
+
+
+sig_coef_non_neg <- sig_coefs + abs(min(sig_coefs))
+
+RA <- decorana(sig_coef_non_neg)
+ord_rows <- order(RA$rproj[,1])
+ord_cols <- order(RA$cproj[,1])
+
+sig_coefs <- sig_coefs[ord_rows,ord_cols]
+
+
+min <- min(sig_coefs)
+max <- max(sig_coefs)
+
+
+library(yarrr)
+
+#pdf(file = "C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly/Plots/Community structure analysis/species_effects.pdf", width = 6, height = 5, pointsize = 10)
+
+
+close.screen(all.screens = TRUE)
+split.screen(matrix(c(0,0.85,0,1,
+                      0.85,1,0,1), ncol = 4, nrow = 2, byrow = TRUE))
+
+
+par(mar = c(10,10,1,1))
+maxabs <- max(abs(sig_coefs), na.rm = TRUE)   # ou maxabs <- 180
+ncol <- 200
+generator_col <- colorRampPalette(c(colors = "firebrick", "white", "royalblue"))(ncol)
+
+breaks <- seq(-maxabs, maxabs, length.out = ncol + 1)
+
+
+image( y = 1:nrow(sig_coefs), x = 1:ncol(sig_coefs),z = t(sig_coefs), col = generator_col, xaxt = "n", yaxt = "n", xlab = "", ylab = "", breaks = breaks)
+#par(new = TRUE)
+#image( y = 1:nrow(sig_coefs), x = 1:ncol(sig_coefs),z = t(sig_coefs), col = transparent(c("#FF9896", "white", "#9EDAE5" ), trans.val = 0.1), xaxt = "n", yaxt = "n", xlab = "", ylab = "")
+box(bty = "o")
+
+ynames <- rownames(sig_coefs)
+ynames <- gsub("\\."," ", ynames)
+yat_1 <- which(ynames == "Chironominae" | ynames == "Tanypodinae")
+yat_3 <- which(ynames != "Chironominae" & ynames != "Tanypodinae")
+
+xnames <- colnames(sig_coefs)
+xnames <- gsub("\\."," ", xnames)
+xat_1 <- which(xnames == "Chironominae" | xnames == "Tanypodinae")
+xat_3 <- which(xnames != "Chironominae" & xnames != "Tanypodinae")
+
+axis(2, at = yat_1, labels = ynames[yat_1], las = 2, cex.axis = 0.8, font = 1)
+axis(2, at = yat_3, labels = ynames[yat_3], las = 2, cex.axis = 0.8, font = 3)
+
+axis(1, at = xat_1, labels = xnames[xat_1], las = 2, cex.axis = 0.8, font = 1)
+axis(1, at = xat_3, labels = xnames[xat_3], las = 2, cex.axis = 0.8, font = 3)
+
+title(xlab = "Taxa affected", line = 9, cex.lab = 1.25)
+title(ylab = "Taxa affecting", line = 9, cex.lab = 1.25)
+
+screen(2)
+par(mar = c(10,2.5,1,2.5), bty = "o")
+image( y = 1:length(seq(from = min, to = max, by = 0.18)), x = 1 ,z = t(as.matrix(seq(from = min, to = max, by = 0.18))), col = generator_col, xaxt = "n", yaxt = "n", xlab = "", ylab = "", breaks = breaks)
+axis(2,
+     at = seq(from = 1, to = length(seq(from = min, to = max, by = 0.18)), by = 1),
+     labels = pretty(seq(from = min-0.2, to = max-0.2, length.out = 18), 18), las = 2)
+box()
+
+
+#dev.off()
+```
+
+
+

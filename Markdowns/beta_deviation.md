@@ -1,0 +1,888 @@
+Beta diversity analysis
+================
+Rodolfo Pelinson
+2026-03-31
+
+``` r
+source(paste(sep = "/",dir,"functions/null_assembly.R"))
+source(paste(sep = "/",dir,"functions/null_com_algorithm.R"))
+source(paste(sep = "/",dir,"functions/beta_deviation.R"))
+source(paste(sep = "/",dir,"functions/beta_deviation.R"))
+source(paste(sep = "/",dir,"functions/beta_deviation_siqueira_et_al_2019.R"))
+source(paste(sep = "/",dir,"functions/letters.R"))
+source(paste(sep = "/",dir,"functions/remove_sp.R"))
+```
+
+``` r
+library(vegan)
+library(glmmTMB)
+library(car)
+library(emmeans)
+library(DHARMa)
+library(yarrr)
+library(vioplot)
+```
+
+``` r
+source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
+```
+
+## Preparing data
+
+Excluding the late treatment and preparing data
+
+``` r
+comm_all_2 <- comm_all[Exp_design_all$treatments != "atrasado",]
+Exp_design_all_2 <- Exp_design_all[Exp_design_all$treatments != "atrasado",]
+
+comm_all_2 <- remove_sp(comm_all_2, 0)
+
+ncol(comm_all_2)
+```
+
+    ## [1] 24
+
+``` r
+nrow(comm_all_2)
+```
+
+    ## [1] 96
+
+``` r
+nrow(Exp_design_all_2)
+```
+
+    ## [1] 96
+
+``` r
+ID <-  as.factor(Exp_design_all_2$sites)
+
+AM_by_block <- interaction(as.factor(Exp_design_all_2$block), as.factor( Exp_design_all_2$AM))
+
+
+Exp_design_all_2$AM <- as.factor(Exp_design_all_2$AM)
+Exp_design_all_2$AM_numeric <- as.numeric(Exp_design_all_2$AM)
+Exp_design_all_2$AM_numeric_quad <- Exp_design_all_2$AM_numeric^2
+
+
+Exp_design_all_2$AM_days <- Exp_design_all_2$AM_numeric
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_days == 1] <- 32
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_days == 2] <- 80
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_days == 3] <- 116
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_days == 4] <- 158
+
+
+Exp_design_all_2$AM_days_orig <- Exp_design_all_2$AM_days
+
+Exp_design_all_2$AM_days <- scale(Exp_design_all_2$AM_days)[,1]
+
+Exp_design_all_2$AM_days_quad <- Exp_design_all_2$AM_days^2
+```
+
+Making a presence absence matrix
+
+``` r
+comm_all_2_pa <- decostand(comm_all_2, method = "pa")
+```
+
+## Computing beta deviation
+
+Running the beta deviation analysis keeps gamma diversity within each
+survey fixed, total number of individuals in each sample fixed, and
+average number of species in each survey fixed.
+
+``` r
+beta_dev <-  beta_deviation(comm_all_2, keep_fill = TRUE, method = "quasiswap", dist = "bray", fixedmar="both", shuffle = "both", group = AM_by_block,
+                                  strata = Exp_design_all_2$AM,  mtype = "count", times = 500, burnin = 0, thin = 1000, transform = NULL, seed = 1, type = "centroid", bias.adjust = FALSE)
+```
+
+## Checking premises
+
+Checking if null matrices are keeping the parameters that should be
+fixed, fixed.
+
+Gamma diversity
+
+``` r
+gammas_AM1 <- rep(NA, length(beta_dev$null_cons))
+for(i in 1:length(beta_dev$null_cons)){
+  gammas_AM1[i] <- sum(decostand(colSums(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 1,]), method = "pa"))
+}
+head(gammas_AM1)
+```
+
+    ## [1] 13 13 13 13 13 13
+
+``` r
+tail(gammas_AM1)
+```
+
+    ## [1] 13 13 13 13 13 13
+
+``` r
+#Original
+sum(decostand(colSums(comm_all_2[Exp_design_all_2$AM == 1,]), method = "pa"))
+```
+
+    ## [1] 13
+
+``` r
+#########################################################################################################################
+gammas_AM2 <- rep(NA, length(beta_dev$null_cons))
+for(i in 1:length(beta_dev$null_cons)){
+  gammas_AM2[i] <- sum(decostand(colSums(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 2,]), method = "pa"))
+}
+head(gammas_AM2)
+```
+
+    ## [1] 19 19 19 19 19 19
+
+``` r
+tail(gammas_AM2)
+```
+
+    ## [1] 19 19 19 19 19 19
+
+``` r
+sum(decostand(colSums(comm_all_2[Exp_design_all_2$AM == 2,]), method = "pa"))
+```
+
+    ## [1] 19
+
+``` r
+#########################################################################################################################
+
+gammas_AM3 <- rep(NA, length(beta_dev$null_cons))
+for(i in 1:length(beta_dev$null_cons)){
+  gammas_AM3[i] <- sum(decostand(colSums(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 3,]), method = "pa"))
+}
+head(gammas_AM3)
+```
+
+    ## [1] 13 13 13 13 13 13
+
+``` r
+tail(gammas_AM3)
+```
+
+    ## [1] 13 13 13 13 13 13
+
+``` r
+sum(decostand(colSums(comm_all_2[Exp_design_all_2$AM == 3,]), method = "pa"))
+```
+
+    ## [1] 13
+
+``` r
+#########################################################################################################################
+
+gammas_AM4 <- rep(NA, length(beta_dev$null_cons))
+for(i in 1:length(beta_dev$null_cons)){
+  gammas_AM4[i] <- sum(decostand(colSums(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 4,]), method = "pa"))
+}
+head(gammas_AM4)
+```
+
+    ## [1] 14 14 14 14 14 14
+
+``` r
+tail(gammas_AM4)
+```
+
+    ## [1] 14 14 14 14 14 14
+
+``` r
+sum(decostand(colSums(comm_all_2[Exp_design_all_2$AM == 4,]), method = "pa"))
+```
+
+    ## [1] 14
+
+``` r
+#########################################################################################################################
+```
+
+Alpha diversity
+
+``` r
+comalphas_AM1 <- list()
+for(i in 1:length(beta_dev$null_cons)){
+  comalphas_AM1[[i]]<- rowSums(decostand(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 1,], method = "pa"))
+}
+head(comalphas_AM1)
+```
+
+    ## [[1]]
+    ##  [1] 3 4 4 5 7 2 6 6 6 6 7 4 5 4 5 4 3 3 6 3 3 6 3 5
+    ## 
+    ## [[2]]
+    ##  [1] 3 2 4 7 5 5 2 6 5 3 7 6 4 5 8 5 3 4 8 5 2 5 4 2
+    ## 
+    ## [[3]]
+    ##  [1] 6 2 2 5 4 5 4 5 4 5 4 5 4 4 7 4 5 3 6 4 5 4 5 8
+    ## 
+    ## [[4]]
+    ##  [1] 3 4 6 5 4 3 6 4 3 6 5 4 4 6 4 5 7 2 5 5 3 4 5 7
+    ## 
+    ## [[5]]
+    ##  [1] 3 5 4 6 7 3 6 5 4 2 5 5 3 5 4 7 5 3 5 5 4 4 5 5
+    ## 
+    ## [[6]]
+    ##  [1] 4 5 4 4 4 2 5 5 4 5 3 6 5 3 6 4 3 5 7 5 5 6 5 5
+
+``` r
+tail(comalphas_AM1)
+```
+
+    ## [[1]]
+    ##  [1] 5 5 3 4 7 4 3 5 6 2 6 5 3 5 5 6 5 6 4 5 5 3 4 4
+    ## 
+    ## [[2]]
+    ##  [1] 2 6 4 6 7 2 5 5 5 4 6 4 4 3 6 5 4 4 6 6 4 5 4 3
+    ## 
+    ## [[3]]
+    ##  [1] 3 5 5 7 2 3 4 4 4 6 6 6 4 3 5 4 6 4 6 4 6 5 5 3
+    ## 
+    ## [[4]]
+    ##  [1] 4 3 3 5 4 3 5 5 4 5 7 3 5 7 5 4 3 7 5 6 3 5 5 4
+    ## 
+    ## [[5]]
+    ##  [1] 4 6 5 6 4 2 5 7 4 4 6 5 6 3 4 4 5 6 3 6 4 4 4 3
+    ## 
+    ## [[6]]
+    ##  [1] 2 6 4 7 4 4 3 5 6 7 7 4 5 6 3 5 5 4 3 6 3 4 4 3
+
+``` r
+#Original
+rowSums(decostand(comm_all_2[Exp_design_all_2$AM == 1,], method = "pa"))
+```
+
+    ##  1  2  4  5  6  7  9 10 11 13 14 15 16 18 19 20 22 23 24 25 26 27 28 30 
+    ##  6  7  4  4  5  2  6  6  5  4  6  4  3  6  6  5  4  4  4  6  1  3  3  6
+
+``` r
+alphas_AM1 <- rep(NA, length(beta_dev$null_cons))
+for(i in 1:length(beta_dev$null_cons)){
+  alphas_AM1[i] <- mean(rowSums(decostand(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 1,], method = "pa")))
+}
+head(alphas_AM1)
+```
+
+    ## [1] 4.583333 4.583333 4.583333 4.583333 4.583333 4.583333
+
+``` r
+tail(alphas_AM1)
+```
+
+    ## [1] 4.583333 4.583333 4.583333 4.583333 4.583333 4.583333
+
+``` r
+#Original
+mean(rowSums(decostand(comm_all_2[Exp_design_all_2$AM == 1,], method = "pa")))
+```
+
+    ## [1] 4.583333
+
+``` r
+#########################################################################################################################
+alphas_AM2 <- rep(NA, length(beta_dev$null_cons))
+for(i in 1:length(beta_dev$null_cons)){
+  alphas_AM2[i] <- mean(rowSums(decostand(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 2,], method = "pa")))
+}
+head(alphas_AM2)
+```
+
+    ## [1] 5.75 5.75 5.75 5.75 5.75 5.75
+
+``` r
+tail(alphas_AM2)
+```
+
+    ## [1] 5.75 5.75 5.75 5.75 5.75 5.75
+
+``` r
+#Original
+mean(rowSums(decostand(comm_all_2[Exp_design_all_2$AM == 2,], method = "pa")))
+```
+
+    ## [1] 5.75
+
+``` r
+#########################################################################################################################
+
+alphas_AM3 <- rep(NA, length(beta_dev$null_cons))
+for(i in 1:length(beta_dev$null_cons)){
+  alphas_AM3[i] <- mean(rowSums(decostand(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 3,], method = "pa")))
+}
+head(alphas_AM3)
+```
+
+    ## [1] 4.708333 4.708333 4.708333 4.708333 4.708333 4.708333
+
+``` r
+tail(alphas_AM3)
+```
+
+    ## [1] 4.708333 4.708333 4.708333 4.708333 4.708333 4.708333
+
+``` r
+#Original
+mean(rowSums(decostand(comm_all_2[Exp_design_all_2$AM == 3,], method = "pa")))
+```
+
+    ## [1] 4.708333
+
+``` r
+#########################################################################################################################
+
+alphas_AM4 <- rep(NA, length(beta_dev$null_cons))
+for(i in 1:length(beta_dev$null_cons)){
+  alphas_AM4[i] <- mean(rowSums(decostand(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 4,], method = "pa")))
+}
+head(alphas_AM4)
+```
+
+    ## [1] 5.5 5.5 5.5 5.5 5.5 5.5
+
+``` r
+tail(alphas_AM4)
+```
+
+    ## [1] 5.5 5.5 5.5 5.5 5.5 5.5
+
+``` r
+#Original
+mean(rowSums(decostand(comm_all_2[Exp_design_all_2$AM == 4,], method = "pa")))
+```
+
+    ## [1] 5.5
+
+``` r
+#########################################################################################################################
+```
+
+Community sizes
+
+``` r
+comsizes_AM1 <- list()
+for(i in 1:length(beta_dev$null_cons)){
+  comsizes_AM1[[i]]<- rowSums(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 1,])
+}
+head(comsizes_AM1)
+```
+
+    ## [[1]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+    ## 
+    ## [[2]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+    ## 
+    ## [[3]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+    ## 
+    ## [[4]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+    ## 
+    ## [[5]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+    ## 
+    ## [[6]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+
+``` r
+tail(comsizes_AM1)
+```
+
+    ## [[1]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+    ## 
+    ## [[2]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+    ## 
+    ## [[3]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+    ## 
+    ## [[4]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+    ## 
+    ## [[5]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+    ## 
+    ## [[6]]
+    ##  [1] 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408
+    ## [20] 220  80 199 231 137
+
+``` r
+#Original
+rowSums(comm_all_2[Exp_design_all_2$AM == 1,])
+```
+
+    ##   1   2   4   5   6   7   9  10  11  13  14  15  16  18  19  20  22  23  24  25 
+    ## 199 306 129 306 264  21 141 370 314  79 299 203 209 121 135 167 191 135 408 220 
+    ##  26  27  28  30 
+    ##  80 199 231 137
+
+``` r
+#########################################################################################################################
+comsizes_AM2 <- list()
+for(i in 1:length(beta_dev$null_cons)){
+  comsizes_AM2[[i]]<- rowSums(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 2,])
+}
+head(comsizes_AM2)
+```
+
+    ## [[1]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+    ## 
+    ## [[2]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+    ## 
+    ## [[3]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+    ## 
+    ## [[4]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+    ## 
+    ## [[5]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+    ## 
+    ## [[6]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+
+``` r
+tail(comsizes_AM2)
+```
+
+    ## [[1]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+    ## 
+    ## [[2]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+    ## 
+    ## [[3]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+    ## 
+    ## [[4]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+    ## 
+    ## [[5]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+    ## 
+    ## [[6]]
+    ##  [1] 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64
+    ## [20]  47 114  33  96  63
+
+``` r
+#Original
+rowSums(comm_all_2[Exp_design_all_2$AM == 2,])
+```
+
+    ##  31  32  34  35  36  37  39  40  41  43  44  45  46  48  49  50  52  53  54  55 
+    ## 127  88  53  40 101  17   8 182 141  23  38 111  46  42  77 139  59  67  64  47 
+    ##  56  57  58  60 
+    ## 114  33  96  63
+
+``` r
+#########################################################################################################################
+comsizes_AM3 <- list()
+for(i in 1:length(beta_dev$null_cons)){
+  comsizes_AM3[[i]]<- rowSums(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 3,])
+}
+head(comsizes_AM3)
+```
+
+    ## [[1]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+    ## 
+    ## [[2]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+    ## 
+    ## [[3]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+    ## 
+    ## [[4]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+    ## 
+    ## [[5]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+    ## 
+    ## [[6]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+
+``` r
+tail(comsizes_AM3)
+```
+
+    ## [[1]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+    ## 
+    ## [[2]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+    ## 
+    ## [[3]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+    ## 
+    ## [[4]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+    ## 
+    ## [[5]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+    ## 
+    ## [[6]]
+    ##  [1] 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+
+``` r
+#Original
+rowSums(comm_all_2[Exp_design_all_2$AM == 3,])
+```
+
+    ## 61 62 64 65 66 67 69 70 71 73 74 75 76 78 79 80 82 83 84 85 86 87 88 90 
+    ## 30 80  7  4 67 31 12 36 49 44  9 96 18 91  5 47  9 84 11 20 35 10 28 10
+
+``` r
+#########################################################################################################################
+
+comsizes_AM4 <- list()
+for(i in 1:length(beta_dev$null_cons)){
+  comsizes_AM4[[i]]<- rowSums(beta_dev$null_cons[[i]][Exp_design_all_2$AM == 4,])
+}
+head(comsizes_AM4)
+```
+
+    ## [[1]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+    ## 
+    ## [[2]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+    ## 
+    ## [[3]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+    ## 
+    ## [[4]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+    ## 
+    ## [[5]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+    ## 
+    ## [[6]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+
+``` r
+tail(comsizes_AM4)
+```
+
+    ## [[1]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+    ## 
+    ## [[2]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+    ## 
+    ## [[3]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+    ## 
+    ## [[4]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+    ## 
+    ## [[5]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+    ## 
+    ## [[6]]
+    ##  [1]  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16
+    ## [20]  53  65  18  34  95
+
+``` r
+#Original
+rowSums(comm_all_2[Exp_design_all_2$AM == 4,])
+```
+
+    ##  91  92  94  95  96  97  99 100 101 103 104 105 106 108 109 110 112 113 114 115 
+    ##  44  75  63 158  58  24  35  71  31 283  25 112  46 134  51  22  36  62  16  53 
+    ## 116 117 118 120 
+    ##  65  18  34  95
+
+``` r
+#########################################################################################################################
+```
+
+## Analysis
+
+``` r
+mod_obs_null <- glmmTMB(beta_dev$observed_distances ~ 1 + (1|sites), data = Exp_design_all_2)
+```
+
+    ## Warning in glmmTMB(beta_dev$observed_distances ~ 1 + (1 | sites), data =
+    ## Exp_design_all_2): use of the '$' operator in formulas is not recommended
+
+``` r
+mod_exp_null <- glmmTMB(beta_dev$expected_distances ~ 1 + (1|sites), data = Exp_design_all_2)
+```
+
+    ## Warning in glmmTMB(beta_dev$expected_distances ~ 1 + (1 | sites), data =
+    ## Exp_design_all_2): use of the '$' operator in formulas is not recommended
+
+``` r
+mod_dev_null <- glmmTMB(beta_dev$deviation_distances ~ 1 + (1|sites), data = Exp_design_all_2)
+```
+
+    ## Warning in glmmTMB(beta_dev$deviation_distances ~ 1 + (1 | sites), data =
+    ## Exp_design_all_2): use of the '$' operator in formulas is not recommended
+
+``` r
+mod_obs_am_num <- glmmTMB(beta_dev$observed_distances ~ AM_days + (1|sites), data = Exp_design_all_2)
+```
+
+    ## Warning in glmmTMB(beta_dev$observed_distances ~ AM_days + (1 | sites), : use
+    ## of the '$' operator in formulas is not recommended
+
+``` r
+mod_exp_am_num <- glmmTMB(beta_dev$expected_distances ~ AM_days + (1|sites), data = Exp_design_all_2)
+```
+
+    ## Warning in glmmTMB(beta_dev$expected_distances ~ AM_days + (1 | sites), : use
+    ## of the '$' operator in formulas is not recommended
+
+``` r
+mod_dev_am_num <- glmmTMB(beta_dev$deviation_distances ~ AM_days + (1|sites), data = Exp_design_all_2)
+```
+
+    ## Warning in glmmTMB(beta_dev$deviation_distances ~ AM_days + (1 | sites), : use
+    ## of the '$' operator in formulas is not recommended
+
+``` r
+mod_obs_am_num_quad <- glmmTMB(beta_dev$observed_distances ~ AM_days + AM_days_quad + (1|sites), data = Exp_design_all_2)
+```
+
+    ## Warning in glmmTMB(beta_dev$observed_distances ~ AM_days + AM_days_quad + : use
+    ## of the '$' operator in formulas is not recommended
+
+``` r
+mod_exp_am_num_quad <- glmmTMB(beta_dev$expected_distances ~ AM_days + AM_days_quad + (1|sites), data = Exp_design_all_2)
+```
+
+    ## Warning in glmmTMB(beta_dev$expected_distances ~ AM_days + AM_days_quad + : use
+    ## of the '$' operator in formulas is not recommended
+
+``` r
+mod_dev_am_num_quad <- glmmTMB(beta_dev$deviation_distances ~ AM_days + AM_days_quad + (1|sites), data = Exp_design_all_2)
+```
+
+    ## Warning in glmmTMB(beta_dev$deviation_distances ~ AM_days + AM_days_quad + :
+    ## use of the '$' operator in formulas is not recommended
+
+``` r
+anova_obs <- anova(mod_obs_null, mod_obs_am_num, mod_obs_am_num_quad)
+anova_obs
+```
+
+    ## Data: Exp_design_all_2
+    ## Models:
+    ## mod_obs_null: beta_dev$observed_distances ~ 1 + (1 | sites), zi=~0, disp=~1
+    ## mod_obs_am_num: beta_dev$observed_distances ~ AM_days + (1 | sites), zi=~0, disp=~1
+    ## mod_obs_am_num_quad: beta_dev$observed_distances ~ AM_days + AM_days_quad + (1 | sites), zi=~0, disp=~1
+    ##                     Df     AIC      BIC logLik deviance  Chisq Chi Df
+    ## mod_obs_null         3 -104.08  -96.387 55.040  -110.08              
+    ## mod_obs_am_num       4 -111.71 -101.450 59.853  -119.71 9.6267      1
+    ## mod_obs_am_num_quad  5 -111.42  -98.594 60.708  -121.42 1.7087      1
+    ##                     Pr(>Chisq)   
+    ## mod_obs_null                     
+    ## mod_obs_am_num        0.001918 **
+    ## mod_obs_am_num_quad   0.191155   
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+anova_exp <- anova(mod_exp_null, mod_exp_am_num, mod_exp_am_num_quad)
+anova_exp
+```
+
+    ## Data: Exp_design_all_2
+    ## Models:
+    ## mod_exp_null: beta_dev$expected_distances ~ 1 + (1 | sites), zi=~0, disp=~1
+    ## mod_exp_am_num: beta_dev$expected_distances ~ AM_days + (1 | sites), zi=~0, disp=~1
+    ## mod_exp_am_num_quad: beta_dev$expected_distances ~ AM_days + AM_days_quad + (1 | sites), zi=~0, disp=~1
+    ##                     Df     AIC     BIC logLik deviance  Chisq Chi Df Pr(>Chisq)
+    ## mod_exp_null         3 -220.90 -213.20 113.45  -226.90                         
+    ## mod_exp_am_num       4 -219.88 -209.62 113.94  -227.88 0.9818      1    0.32174
+    ## mod_exp_am_num_quad  5 -225.20 -212.38 117.60  -235.20 7.3223      1    0.00681
+    ##                       
+    ## mod_exp_null          
+    ## mod_exp_am_num        
+    ## mod_exp_am_num_quad **
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+anova_dev <- anova(mod_dev_null, mod_dev_am_num, mod_dev_am_num_quad)
+anova_dev
+```
+
+    ## Data: Exp_design_all_2
+    ## Models:
+    ## mod_dev_null: beta_dev$deviation_distances ~ 1 + (1 | sites), zi=~0, disp=~1
+    ## mod_dev_am_num: beta_dev$deviation_distances ~ AM_days + (1 | sites), zi=~0, disp=~1
+    ## mod_dev_am_num_quad: beta_dev$deviation_distances ~ AM_days + AM_days_quad + (1 | , zi=~0, disp=~1
+    ## mod_dev_am_num_quad:     sites), zi=~0, disp=~1
+    ##                     Df    AIC    BIC  logLik deviance   Chisq Chi Df Pr(>Chisq)
+    ## mod_dev_null         3 360.08 367.77 -177.04   354.08                          
+    ## mod_dev_am_num       4 350.20 360.46 -171.10   342.20 11.8801      1  0.0005674
+    ## mod_dev_am_num_quad  5 352.17 364.99 -171.09   342.17  0.0262      1  0.8713724
+    ##                        
+    ## mod_dev_null           
+    ## mod_dev_am_num      ***
+    ## mod_dev_am_num_quad    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+plot(simulateResiduals(mod_obs_am_num_quad))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+
+``` r
+plot(simulateResiduals(mod_exp_am_num_quad))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
+
+``` r
+plot(simulateResiduals(mod_dev_am_num_quad))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-14-3.png)<!-- -->
+
+## Making predictions
+
+``` r
+new_data_days <- data.frame(AM_days = seq(from= min(Exp_design_all_2$AM_days), to = max(Exp_design_all_2$AM_days), length.out = 100),
+                       AM_days_quad = seq(from= min(Exp_design_all_2$AM_days), to = max(Exp_design_all_2$AM_days), length.out = 100)^2)
+
+
+predicted_obs <- predict(mod_obs_am_num, newdata = new_data_days, se.fit = TRUE, re.form = NA)
+predicted_obs$upper <- predicted_obs$fit + predicted_obs$se.fit * qnorm(0.975)
+predicted_obs$lower <- predicted_obs$fit + predicted_obs$se.fit * qnorm(0.025) 
+
+predicted_exp_quad <- predict(mod_exp_am_num_quad, newdata = new_data_days, se.fit = TRUE, re.form = NA)
+predicted_exp_quad$upper <- predicted_exp_quad$fit + predicted_exp_quad$se.fit * qnorm(0.975)
+predicted_exp_quad$lower <- predicted_exp_quad$fit + predicted_exp_quad$se.fit * qnorm(0.025) 
+
+predicted_dev <- predict(mod_dev_am_num, newdata = new_data_days, se.fit = TRUE, re.form = NA)
+predicted_dev$upper <- predicted_dev$fit + predicted_dev$se.fit * qnorm(0.975)
+predicted_dev$lower <- predicted_dev$fit + predicted_dev$se.fit * qnorm(0.025) 
+```
+
+## Plots
+
+``` r
+set.seed(1)
+#svg(file = "plots/Community structure analysis/beta_deviation.svg", width = 6, height = 3, pointsize = 8)
+
+par(mfrow = c(1,2))
+#par(mar  = c(4,4,1,1), bty = "n")
+
+unique_AM_days <- unique(Exp_design_all_2$AM_days)
+unique_AM_days_orig <- unique(Exp_design_all_2$AM_days_orig)
+
+#vioplot(beta_dev$observed_distances ~ AM_days, data = Exp_design_all_2, at = unique_AM_days,
+#        h = 0.05, drawRect = FALSE, border = FALSE, side = "left",
+#        xaxt = "n", yaxt = "n", ylab = "", xlab = "", ylim = c(0.1,0.8),
+#        col = transparent("blue", trans.val = 0.85), wex = 20,  xlim = c(min(unique_AM_days)*1.1,max(unique_AM_days)*1.1), xaxs = "i")
+
+#par(mar  = c(4,4,1,1), bty = "n", new = TRUE)
+#vioplot(beta_dev$expected_distances ~ AM_days, data = Exp_design_all_2, at = unique_AM_days,
+#        h = 0.005, drawRect = FALSE, border = FALSE, side = "right",
+#        xaxt = "n", yaxt = "n", ylab = "", xlab = "", ylim = c(0.1,0.8),
+#        col = transparent("red", trans.val = 0.85), wex = 20,  xlim = c(min(unique_AM_days)*1.1,max(unique_AM_days)*1.1), xaxs = "i")
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(beta_dev$observed_distances ~ jitter(AM_days, 1),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n", ylim = c(0.1,0.8), xlim = c(min(unique_AM_days)*1.25,max(unique_AM_days)*1.25),  xaxs = "i")
+
+polygon(x = c(new_data_days$AM_days[1:100], new_data_days$AM_days[100:1]),
+        y = c(predicted_obs$upper[1:100], predicted_obs$lower[100:1]), col = transparent("blue", trans.val = 0.6), border = FALSE) 
+
+polygon(x = c(new_data_days$AM_days[1:100], new_data_days$AM_days[100:1]),
+        y = c(predicted_exp_quad$upper[1:100], predicted_exp_quad$lower[100:1]), col = transparent("red", trans.val = 0.6), border = FALSE) 
+
+
+points(beta_dev$observed_distances ~ jitter(AM_days-0.075, 0.5), pch = 21, col= "black",bg = transparent("blue", trans.val = 0.75), cex = 1.1, data = Exp_design_all_2)
+points(beta_dev$expected_distances ~ jitter(AM_days+0.075, 0.5), pch = 21, col= "black",bg = transparent("red", trans.val = 0.75), cex = 1.1, data = Exp_design_all_2)
+
+lines(x = new_data_days$AM_days,y = predicted_obs$fit, col = "black", lwd = 2)
+lines(x = new_data_days$AM_days,y = predicted_exp_quad$fit, col = "black", lwd = 2)
+
+
+title(ylab = "Distance to centroid", cex.lab = 1.25, line= 2.25)
+axis(1, at = unique_AM_days, labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
+
+legend(legend = c("Observed",
+                  "Expected"), x = 100, y = 18, bty = "n", pch = 21, col = "black", pt.bg = c(transparent("blue", trans.val = 0.75),transparent("red", trans.val = 0.75)), xjust = 1, yjust = 0)
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+#####################################################################################################################
+
+
+#par(mar  = c(4,4,1,1), bty = "n")
+#vioplot(MY_beta_dev$deviation_distances ~ AM_days, data = Exp_design_all_2, at = c(32,80,116,158),
+#        h = 1, drawRect = FALSE, border = FALSE,
+#        xaxt = "n", yaxt = "n", ylab = "", xlab = "", 
+#        col = transparent("aquamarine2", trans.val = 0.8), wex = 20,  xlim = c(20,170), xaxs = "i")#, ylim = c(-3,5))
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(beta_dev$deviation_distances ~ jitter(AM_days, 0.5),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n",  xlim = c(min(unique_AM_days)*1.25,max(unique_AM_days)*1.25), xaxs = "i")#, ylim = c(-3,5),)
+
+polygon(x = c(new_data_days$AM_days[1:100], new_data_days$AM_days[100:1]),
+        y = c(predicted_dev$upper[1:100], predicted_dev$lower[100:1]), col = transparent("grey50", trans.val = 0.5), border = FALSE) 
+
+points(beta_dev$deviation_distances ~ jitter(AM_days, 1), pch = 21, col= "black",bg = transparent("aquamarine2", trans.val = 0.5), cex = 1.1, data = Exp_design_all_2)
+lines(x = new_data_days$AM_days,y = predicted_dev$fit, col = "black", lwd = 2)
+abline(h = 0, lwd = 1.5, lty = 2, col = "black")
+title(ylab = "Deviation distances", cex.lab = 1.25, line= 2.25)
+axis(1, at = unique_AM_days, labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+
+
+#dev.off()
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->

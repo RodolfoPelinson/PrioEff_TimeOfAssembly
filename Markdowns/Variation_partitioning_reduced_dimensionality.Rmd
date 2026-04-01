@@ -1,0 +1,358 @@
+---
+title: "Variation partitioning  with previous community"
+author: "Rodolfo Pelinson"
+date: "2025-10-17"
+editor_options: 
+  chunk_output_type: console
+---
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE, echo = FALSE, include=FALSE}
+dir<-("C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly")
+```
+
+```{r}
+source(paste(sep = "/",dir,"functions/remove_sp.R"))
+source(paste(sep = "/",dir,"functions/varpart_manyglm.R"))
+source(paste(sep = "/",dir,"functions/R2_manyglm.R"))
+```
+
+```{r, message = FALSE, warning = FALSE}
+library(vegan)
+library(gllvm)
+library(mvabund)
+```
+
+```{r,  warning=FALSE, message = FALSE}
+source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
+```
+
+
+Building the community matrix with one step in time delayed (the predictor community)
+```{r}
+#Excluding the first survey
+comm_all_2 <- comm_all[Exp_design_all$AM != 1,]
+Exp_design_all_2 <- Exp_design_all[Exp_design_all$AM != 1,]
+
+#Making a prior occupancy predictor
+comm_all_prior <- comm_all[Exp_design_all$AM != 4,]
+Exp_design_all_prior <- Exp_design_all[Exp_design_all$AM != 4,]
+
+#Now excluding the late treatment because it complicate things
+comm_all_2 <- comm_all_2[Exp_design_all_2$treatments != "atrasado",]
+comm_all_prior <- comm_all_prior[Exp_design_all_prior$treatments != "atrasado",]
+Env_new <- Env_2_4[Exp_design_all_2$treatments != "atrasado",-c(1)]
+Exp_design_all_2 <- Exp_design_all_2[Exp_design_all_2$treatments != "atrasado",]
+Exp_design_all_prior <- Exp_design_all_prior[Exp_design_all_prior$treatments != "atrasado",]
+
+
+ncol(comm_all_2)
+ncol(comm_all_prior)
+
+comm_all_2 <- remove_sp(comm_all_2, 4)
+comm_all_prior <- remove_sp(comm_all_prior, 10)
+
+ncol(comm_all_2)
+ncol(comm_all_prior)
+
+nrow(comm_all_2)
+nrow(comm_all_prior)
+nrow(Env_new)
+nrow(Exp_design_all_2)
+```
+
+
+
+To reduce dimensionality of data and standardize as much as possible the number of predictors in each set of predictors we ran a nmds on the prior community state matrix and a PCA on the environmental predictors
+
+```{r}
+ID <-  as.factor(Exp_design_all_2$sites)
+block <-  data.frame(block2 = Exp_design_all_2$block2)
+
+Env_st <- decostand(Env_new, method = "stand")
+pca_env <- rda(Env_st)
+sum(c(pca_env$CA$eig/sum(pca_env$CA$eig))[1:3])
+
+Env_st_pca <- data.frame(pca_env$CA$u[,1:3])
+
+comm_all_prior_total <- data.frame(decostand(comm_all_prior, method = "total", MARGIN = 2))
+set.seed(1); nmds_prior <- metaMDS(comm_all_prior_total, distance  = "bray", k = 3, try = 100, trymax = 100)
+comm_all_prior_nmds <- data.frame(nmds_prior$points)
+comm_all_prior_nmds <- decostand(comm_all_prior_nmds, method = "stand")
+
+AM <- data.frame(AM = as.numeric(Exp_design_all_2$AM))
+AM <- decostand(AM, method = "stand")
+AM$AM_quad <- AM$AM^2
+
+
+predictors <- list(block = block,
+                   Env = Env_st_pca,
+                   Time = AM,
+                   Priority = comm_all_prior_nmds)
+
+lapply(predictors, FUN = nrow)
+lapply(predictors, FUN = ncol)
+
+```
+
+We ended up with this number of predictors:
+
+Prior community structure: 2
+Time: 2
+Environment: 2
+Block: 1 factor with 3 levels (effectively 2 predictors)
+
+
+Variation partitioning
+
+```{r}
+varpart_priority <- varpart_manyglm(comm_all_2, pred = predictors, DF_adj_r2 = FALSE)
+
+varpart_priority$R2_fractions_com
+
+total_r2 <- varpart_priority$R2_models$`block-Env-Time-Priority`
+total_r2
+```
+
+
+Scaling fractions so the added partial ones won't larger than the total R² of the model (which may sometime happen).
+```{r}
+
+
+
+##### PLOT
+full_model_sp <- varpart_priority$R2_models_sp$block.Env.Time.Priority
+names(full_model_sp) <- rownames(varpart_priority$R2_models_sp)
+ord_sp <- order(full_model_sp, decreasing = TRUE)
+
+full_model_sp<- full_model_sp[ord_sp]
+
+
+full_block <-  varpart_priority$R2_fractions_sp$R2_full_fraction$block
+names(full_block) <- rownames(varpart_priority$R2_fractions_sp$R2_full_fraction)
+
+full_Env <-  varpart_priority$R2_fractions_sp$R2_full_fraction$Env
+names(full_Env) <- rownames(varpart_priority$R2_fractions_sp$R2_full_fraction)
+
+full_Time <-  varpart_priority$R2_fractions_sp$R2_full_fraction$Time
+names(full_Time) <- rownames(varpart_priority$R2_fractions_sp$R2_full_fraction)
+
+full_Priority <-  varpart_priority$R2_fractions_sp$R2_full_fraction$Priority
+names(full_Priority) <- rownames(varpart_priority$R2_fractions_sp$R2_full_fraction)
+
+
+pure_block <-  varpart_priority$R2_fractions_sp$R2_pure_fraction$block
+names(pure_block) <- rownames(varpart_priority$R2_fractions_sp$R2_pure_fraction)
+
+pure_Env <-  varpart_priority$R2_fractions_sp$R2_pure_fraction$Env
+names(pure_Env) <- rownames(varpart_priority$R2_fractions_sp$R2_pure_fraction)
+
+pure_Time <-  varpart_priority$R2_fractions_sp$R2_pure_fraction$Time
+names(pure_Time) <- rownames(varpart_priority$R2_fractions_sp$R2_pure_fraction)
+
+pure_Priority <-  varpart_priority$R2_fractions_sp$R2_pure_fraction$Priority
+names(pure_Priority) <- rownames(varpart_priority$R2_fractions_sp$R2_pure_fraction)
+
+full_block <- full_block[ord_sp]
+full_Env <- full_Env[ord_sp]
+full_Time <- full_Time[ord_sp]
+full_Priority <- full_Priority[ord_sp]
+
+pure_block <- pure_block[ord_sp]
+pure_Env <- pure_Env[ord_sp]
+pure_Time <- pure_Time[ord_sp]
+pure_Priority <- pure_Priority[ord_sp]
+
+shared_priority_others <- full_Priority - pure_Priority
+
+
+pure_block[pure_block < 0] <- 0
+pure_Env[pure_Env < 0] <- 0
+pure_Time[pure_Time < 0] <- 0
+pure_Priority[pure_Priority < 0] <- 0
+
+
+pure_frac_summed <- pure_block + pure_Env + pure_Time + pure_Priority
+
+scale <- full_model_sp/pure_frac_summed
+
+scale[scale > 1] <- 1
+
+pure_frac_summed_scaled <- pure_frac_summed * scale
+
+cbind(pure_frac_summed_scaled, full_model_sp)
+
+pure_block_scaled  <- pure_block * scale
+pure_Env_scaled  <- pure_Env * scale
+pure_Time_scaled  <- pure_Time * scale
+pure_Priority_scaled  <- pure_Priority * scale
+
+
+scale_shared <- (full_model_sp - pure_frac_summed)  / shared_priority_others
+scale_shared[scale_shared > 1] <- 1
+
+shared_priority_others[shared_priority_others < 0] <- 0
+
+shared_priority_others_scaled <- shared_priority_others * scale_shared
+```
+
+
+
+
+Plot including shared effects between priority effects and others/
+```{r,   fig.width = 6, fig.height = 5, dpi = 600, dev.args= list(pointsize=9)}
+
+at_generator <- function(first, spacing, n){
+  axis <- first
+  for(i in 2:(n)){
+    axis[i] <- first + spacing*(i-1)
+  }
+  return(axis)
+}
+
+
+#svg(file = "C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly/Plots/Community structure analysis/varpart_reduced_dim.svg", width = 6, height = 5, pointsize = 9)
+close.screen(all.screens = TRUE)
+split.screen(matrix(c(0,0.3,0.625,1,
+                      0.3,1,0.625,1,
+                      0,0.3,0.25,0.625,
+                      0.3,1,0.25,0.625), ncol = 4, nrow = 4, byrow = TRUE))
+
+screen(4)
+par(mar = c(2,1,1,1))
+barplot(full_model_sp, ylim = c(0,0.7), las = 2, border = "white", col = "#C7C7C7", xaxt = "n", xaxs = "i", width = 1, space = 0.5, xlim = c(0,20), yaxt = "n")
+par(new = TRUE)
+pure_scaleds <- rbind(pure_block_scaled, pure_Env_scaled, pure_Time_scaled, pure_Priority_scaled, shared_priority_others_scaled)
+barplot(pure_scaleds, ylim = c(0,0.7), las = 2, col = c("#98DF8A", "#9EDAE5", "#FFBB78", "#F7B6D2", "#C5B0D5"), border = "white", xaxt = "n", xaxs = "i", width = 1, space = 0.5, xlim = c(0,20), yaxt = "n")
+box(bty = "l")
+names <- colnames(pure_scaleds)
+names <- gsub("\\."," ", names)
+font <- rep(3, length(names))
+font[names == "Chironominae" | names == "Tanypodinae"] <- 1
+
+names1 <- names
+names3 <- names
+
+names1[names == "Chironominae" | names == "Tanypodinae"] <- ""
+names3[names != "Chironominae" & names != "Tanypodinae"] <- ""
+
+
+axis(1, at = at_generator(first = 1, spacing = 1.5, n = length(names)), gap.axis = -10, tick = TRUE, labels = FALSE, las = 2, font = 3, line = 0)
+
+axis(1, at = at_generator(first = 1, spacing = 1.5, n = length(names1)), gap.axis = -10, tick = FALSE, labels = names1, las = 2, font = 3, line = 0)
+axis(1, at = at_generator(first = 1, spacing = 1.5, n = length(names3)), gap.axis = -10, tick = FALSE, labels = names3, las = 2, font = 1, line = 0)
+
+
+axis(2, las = 2, line = 0, labels = FALSE)
+
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, xlim = c(0,100), ylim = c(0,100), xaxt = "n", yaxt = "n", xaxs = "i", yaxs = "i", )
+
+
+
+
+screen(3)
+par(mar = c(2,4,1,1))
+barplot(total_r2, ylim = c(0,0.7), las = 2, border = "white", col = "#C7C7C7", xaxt = "n", xaxs = "i", width = 1, space = 0.5, xlim = c(0,2), yaxt = "n")
+par(new = TRUE)
+
+shared_priority_com <- varpart_priority$R2_fractions_com[4,1] - varpart_priority$R2_fractions_com[4,2]
+pure_scaleds <- as.matrix(c(varpart_priority$R2_fractions_com$R2_pure_fraction, shared_priority_com))
+
+barplot(pure_scaleds, ylim = c(0,0.7), las = 2, col = c("#98DF8A", "#9EDAE5", "#FFBB78", "#F7B6D2", "#C5B0D5"), border = "white", xaxt = "n", xaxs = "i", width = 1, space = 0.5, xlim = c(0,2), yaxt = "n")
+box(bty = "l")
+#title(ylab = "Likelihood ratio R²", cex.lab = 1.25)
+
+axis(1, at = c(1), gap.axis = -10, tick = FALSE, labels = "Community", las = 1, font = 1, line = -0.5)
+
+title(ylab = "Likelihood ratio R²", cex.lab = 1.25)
+axis(2, las = 2, line = 0)
+
+
+screen(2)
+par(mar = c(2,1,1,1))
+pure_scaleds <- rbind(full_block, full_Env, full_Time, full_Priority)
+barplot(pure_scaleds, ylim = c(0,0.7), las = 2, col = c("#98DF8A", "#9EDAE5", "#FFBB78", "#F7B6D2"), border = "transparent", xaxt = "n", xaxs = "i", width = 1, space = c(0,2), xlim = c(0,80), yaxt = "n", beside = TRUE)
+box(bty = "l")
+names <- colnames(pure_scaleds)
+names <- gsub("\\."," ", names)
+font <- rep(3, length(names))
+font[names == "Chironominae" | names == "Tanypodinae"] <- 1
+
+axis(1, at = at_generator(first = 4, spacing = 6, n = length(names)), gap.axis = -10, tick = TRUE, labels = FALSE, las = 2, font = 3, line = 0)
+#axis(1, at = at_generator(first = 4, spacing = 6, n = length(c(names[1:8], c("",""),names[11:13]))), gap.axis = -10, tick = FALSE, labels = c(names[1:8], c("",""),names[11:13]), las = 2, font = 3, line = 0)
+#axis(1, at = at_generator(first = 4, spacing = 6, n = length(c(rep("",8), names[9:10],rep("",3)))), gap.axis = -10, tick = FALSE, labels = c(rep("",8), names[9:10],rep("",3)), las = 2, font = 1, line = 0)
+
+axis(2, las = 2, line = 0, labels = FALSE)
+
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, xlim = c(0,100), ylim = c(0,100), xaxt = "n", yaxt = "n", xaxs = "i", yaxs = "i", )
+
+legend(x = 99, y = 99, xjust = 1, yjust = 1, fill = c("#98DF8A", "#9EDAE5", "#FFBB78","#F7B6D2", "#C5B0D5", "#C7C7C7"),
+       legend = c("Block", "Water parameters", "Time", "Priority effects", "Shared with priority effects", "Shared among others"), border = "white", bty = "n")
+
+screen(1)
+par(mar = c(2,4,1,1))
+
+pure_scaleds <- as.matrix(varpart_priority$R2_fractions_com$R2_full_fraction)
+
+barplot(pure_scaleds, ylim = c(0,0.7), las = 2, col = c("#98DF8A", "#9EDAE5", "#FFBB78", "#F7B6D2", "#C5B0D5"), border = "white", xaxt = "n", xaxs = "i", width = 1, space = c(0,1), xlim = c(0,6), yaxt = "n", beside = TRUE)
+box(bty = "l")
+#axis(1, at = c(3), gap.axis = -10, tick = FALSE, labels = "Community", las = 1, font = 1, line = -0.5)
+#title(ylab = "Likelihood ratio R²", cex.lab = 1.25)
+
+#axis(1, at = c(3), gap.axis = -10, tick = FALSE, labels = "Community", las = 1, font = 1, line = -0.5)
+
+
+title(ylab = "Likelihood ratio R²", cex.lab = 1.25)
+axis(2, las = 2, line = 0)
+
+#dev.off()
+######
+
+
+```
+
+
+
+
+
+Now testing the significance of these fractions
+```{r, cache = TRUE}
+set.seed(3)
+control <- permute::how(within = permute::Within(type = 'free'),
+                        plots = Plots(strata = ID, type = 'free'),
+                        nperm = 999)
+permutations <- shuffleSet(nrow(comm_all_2), control = control)
+
+
+anova_block_pure <- anova(varpart_priority$models$`block-Env-Time-Priority`, varpart_priority$models$`Env-Time-Priority`, show.time = "all", resamp = "pit.trap", bootID = permutations)
+anova_block_pure
+
+anova_Env_pure <- anova(varpart_priority$models$`block-Env-Time-Priority`, varpart_priority$models$`block-Time-Priority`, show.time = "all", resamp = "pit.trap", bootID = permutations)
+anova_Env_pure
+
+anova_Time_pure <- anova(varpart_priority$models$`block-Env-Time-Priority`, varpart_priority$models$`block-Env-Priority`, show.time = "all", resamp = "pit.trap", bootID = permutations)
+anova_Time_pure
+
+anova_Priority_pure <- anova(varpart_priority$models$`block-Env-Time-Priority`, varpart_priority$models$`block-Env-Time`, show.time = "all", resamp = "pit.trap", bootID = permutations)
+anova_Priority_pure
+
+anova_block <- anova(varpart_priority$models$block, varpart_priority$model_null, show.time = "all", resamp = "pit.trap", bootID = permutations)
+anova_block
+
+anova_Env <- anova(varpart_priority$models$Env, varpart_priority$model_null, show.time = "all", resamp = "pit.trap", bootID = permutations)
+anova_Env
+
+anova_Time <- anova(varpart_priority$models$Time, varpart_priority$model_null, show.time = "all", resamp = "pit.trap", bootID = permutations)
+anova_Time
+
+anova_Priority <- anova(varpart_priority$models$Priority, varpart_priority$model_null, show.time = "all", resamp = "pit.trap", bootID = permutations)
+anova_Priority
+
+```
+

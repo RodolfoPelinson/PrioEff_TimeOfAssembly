@@ -1,0 +1,13 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+Plots/
+data/
+Results/
+Scripts/
+.httr-oauth
+.DS_Store
+.quarto
+look_before_close.R
+ajeitando_planilhas.R

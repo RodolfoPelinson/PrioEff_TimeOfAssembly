@@ -1,0 +1,818 @@
+---
+title: "Effect of first survey on the effect of time"
+author: "Rodolfo Pelinson"
+date: "`r Sys.Date()`"
+output: 
+  github_document: 
+    fig_width: 10
+    fig_height: 8
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r, warning=FALSE, echo = FALSE, include=FALSE}
+dir<-("C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly")
+```
+
+
+## Loading packages and functions
+
+
+```{r, warning=FALSE, message = FALSE}
+
+source(paste(sep = "/",dir,"functions/pairwise_gllvm.R"))
+source(paste(sep = "/",dir,"functions/pairwise_mvabund.R"))
+source(paste(sep = "/",dir,"functions/my.anova.gllvm.R"))
+source(paste(sep = "/",dir,"functions/My_coefplot.R"))
+source(paste(sep = "/",dir,"functions/remove_sp.R"))
+source(paste(sep = "/",dir,"functions/extract_mles.R"))
+source(paste(sep = "/",dir,"functions/my_ordiplot.R"))
+source(paste(sep = "/",dir,"functions/get_scaled_lvs.R"))
+source(paste(sep = "/",dir,"functions/text_contour.R"))
+source(paste(sep = "/",dir,"functions/letters.R"))
+
+```
+
+```{r, warning=FALSE, message = FALSE}
+
+library(vegan)
+library(gllvm)
+library(mvabund)
+library(DHARMa)
+library(glmmTMB)
+library(vioplot)
+library(yarrr)
+library(colorspace)
+
+```
+
+
+```{r}
+sessionInfo()
+```
+
+## Loading and preparing data
+
+
+```{r, message = FALSE, warning=FALSE}
+source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
+```
+
+
+
+```{r, message = FALSE, warning=FALSE}
+comm_all_drop_atrasado <- comm_all[Exp_design_all$treatments != "atrasado",]
+Exp_design_all_drop_atrasado <- Exp_design_all[Exp_design_all$treatments != "atrasado",]
+
+ncol(comm_all_drop_atrasado)
+comm_all_drop_atrasado_rm <- remove_sp(comm_all_drop_atrasado, 10)
+ncol(comm_all_drop_atrasado_rm)
+
+Exp_design_all_drop_atrasado$treatments_AM <- paste(Exp_design_all_drop_atrasado$treatments, Exp_design_all_drop_atrasado$AM, sep="_")
+
+Exp_design_all_drop_atrasado$AM_numeric <- as.numeric(Exp_design_all_drop_atrasado$AM)
+
+Exp_design_all_drop_atrasado$treatments <- as.factor(Exp_design_all_drop_atrasado$treatments)
+
+AM_days <- as.numeric(Exp_design_all_drop_atrasado$AM)
+AM_days[AM_days == 1] <- 32
+AM_days[AM_days == 2] <- 80
+AM_days[AM_days == 3] <- 116
+AM_days[AM_days == 4] <- 158
+
+AM_days_sc <- scale(AM_days)
+
+Exp_design_all_drop_atrasado$AM_days_sc <- c(AM_days_sc)
+Exp_design_all_drop_atrasado$AM_days_sc_squared <- c(AM_days_sc)^2
+
+Exp_design_all_drop_atrasado$AM_days <- c(AM_days)
+Exp_design_all_drop_atrasado$AM_days_squared <- c(AM_days)^2
+
+
+comm_AM1 <- comm_all_drop_atrasado_rm[Exp_design_all_drop_atrasado$AM == 1,]
+comm_AM1_rm <- remove_sp(comm_AM1, 3)
+
+
+
+comm_AM1_pred <- rbind(comm_AM1_rm, comm_AM1_rm, comm_AM1_rm, comm_AM1_rm)
+
+nrow(comm_AM1_pred)
+nrow(Exp_design_all_drop_atrasado)
+nrow(comm_all_drop_atrasado_rm)
+
+comm_AM1_pred_st <- decostand(comm_AM1_pred, "stand")
+colnames(comm_AM1_pred_st) <- gsub(" ", "_", colnames(comm_AM1_pred_st))
+
+predictors <- data.frame(Exp_design_all_drop_atrasado, comm_AM1_pred_st)
+
+
+
+comm_AM1_rm_total <- data.frame(decostand(comm_AM1_rm, method = "total", MARGIN = 2))
+nmds_comm_AM1_rm_total <- metaMDS(comm_AM1_rm_total, distance  = "bray", k = 2)
+comm_AM1_nmds <- data.frame(nmds_comm_AM1_rm_total$points)
+comm_AM1_nmds_st <- decostand(comm_AM1_nmds, method = "stand")
+
+comm_AM1_nmds_st_pred <- rbind(comm_AM1_nmds_st, comm_AM1_nmds_st, comm_AM1_nmds_st, comm_AM1_nmds_st)
+
+predictors_nmds <- data.frame(Exp_design_all_drop_atrasado, comm_AM1_nmds_st_pred)
+
+
+
+```
+
+
+## Testing for effects
+
+
+```{r}
+
+nrow(predictors_nmds)
+nrow(comm_all_drop_atrasado_rm)
+
+set.seed(1)
+control <- permute::how(within = permute::Within(type = 'free'),
+                        plots = Plots(strata = predictors_nmds$sites, type = 'free'),
+                        nperm = 999)
+permutations <- shuffleSet(nrow(comm_all_drop_atrasado_rm), control = control)
+
+
+comm_all_drop_atrasado_mvabund <- mvabund(comm_all_drop_atrasado_rm)
+
+mod_full_lin <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + ( MDS1 + MDS2 ) + AM_days_sc + AM_days_sc:( MDS1 + MDS2 ), family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
+mod_full_quad <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + ( MDS1 + MDS2 ) + AM_days_sc + AM_days_sc_squared + AM_days_sc:( MDS1 + MDS2 ) + AM_days_sc_squared:( MDS1 + MDS2 ), family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
+anova_quadratic_test <- anova(mod_full_lin, mod_full_quad, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_quadratic_test
+
+
+########################################################
+mod_block <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + ( MDS1 + MDS2 ) + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
+mod_no_block <- manyglm(comm_all_drop_atrasado_mvabund ~ ( MDS1 + MDS2 ) + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
+anova_block <- anova(mod_no_block, mod_block, bootID = permutations, show.block = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_block
+########################################################
+
+
+mod_time <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + ( MDS1 + MDS2 ) + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
+mod_no_time <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + ( MDS1 + MDS2 ), family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
+anova_time <- anova(mod_no_time, mod_time, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_time
+########################################################
+
+
+
+mod_prior <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + ( MDS1 + MDS2 ) + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
+mod_no_prior <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
+anova_prior <- anova(mod_no_prior, mod_prior, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_prior
+
+########################################################
+mod_no_int <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + ( MDS1 + MDS2 ) + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
+mod_int <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + ( MDS1 + MDS2 ) + AM_days_sc + AM_days_sc_squared + AM_days_sc:( MDS1 + MDS2 ) + AM_days_sc_squared:( MDS1 + MDS2 ), family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
+anova_interaction <- anova(mod_no_int, mod_int, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_interaction
+
+```
+
+
+
+Which are the species who have at least one of the coefficients for the effect of time in interaction with the effect of the first survey whose confidence interval do not include zero?
+
+```{r}
+
+coefs <- mod_int$coefficients
+LCL <- coefs + mod_int$stderr.coefficients * qnorm(0.025) 
+UCL <- coefs + mod_int$stderr.coefficients * qnorm(0.975) 
+
+coefs[LCL < 0 &  UCL > 0] <- NA
+
+coefs <- coefs[-c(1:7),]
+
+coefs <- coefs[, colSums(coefs, na.rm = TRUE) != 0]
+
+```
+
+
+## Making predictions for plotting
+
+```{r}
+
+#High abundances of 
+#Aedes
+#Culex
+#Dendropsophus_minutus
+#Tanypodinae
+#Callibaetis
+#Culex
+
+new_data_AB_high_MDS1_high_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("AB", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.9), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.9), 100))
+
+new_data_CD_high_MDS1_high_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("CD", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.9), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.9), 100))
+
+
+new_data_EF_high_MDS1_high_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("EF", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.9), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.9), 100))
+
+
+###########################################################################################
+
+
+
+new_data_AB_low_MDS1_high_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("AB", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.1), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.9), 100))
+
+new_data_CD_low_MDS1_high_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("CD", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.1), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.9), 100))
+
+
+new_data_EF_low_MDS1_high_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("EF", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.1), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.9), 100))
+
+
+###########################################################################################
+
+
+
+
+new_data_AB_low_MDS1_low_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("AB", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.1), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.1), 100))
+
+new_data_CD_low_MDS1_low_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("CD", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.1), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.1), 100))
+
+
+new_data_EF_low_MDS1_low_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("EF", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.1), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.1), 100))
+
+
+###########################################################################################
+
+
+
+new_data_AB_high_MDS1_low_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("AB", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.9), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.1), 100))
+
+new_data_CD_high_MDS1_low_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("CD", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.9), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.1), 100))
+
+
+new_data_EF_high_MDS1_low_MDS2 <- 
+  data.frame(AM_days_sc = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100),
+                                AM_days_sc_squared = seq(from = min(Exp_design_all_drop_atrasado$AM_days_sc), to = max(Exp_design_all_drop_atrasado$AM_days_sc), length.out = 100)^2,
+                                block2 = factor(rep("EF", 100), levels = levels(as.factor(Exp_design_all_drop_atrasado$block2))),
+             MDS1 = rep(quantile(predictors_nmds$MDS1, 0.9), 100),
+             MDS2 = rep(quantile(predictors_nmds$MDS2, 0.1), 100))
+
+
+###########################################################################################
+
+
+
+
+
+###########################################################################################
+
+
+AB_high_MDS1_high_MDS2 <- predict.manyglm(mod_int, newdata = new_data_AB_high_MDS1_high_MDS2, type = "response")
+CD_high_MDS1_high_MDS2 <- predict.manyglm(mod_int, newdata = new_data_CD_high_MDS1_high_MDS2, type = "response")
+EF_high_MDS1_high_MDS2 <- predict.manyglm(mod_int, newdata = new_data_EF_high_MDS1_high_MDS2, type = "response")
+
+high_MDS1_high_MDS2 <- array(NA, dim = c(nrow(AB_high_MDS1_high_MDS2), ncol(AB_high_MDS1_high_MDS2), 3))
+high_MDS1_high_MDS2[,,1] <- AB_high_MDS1_high_MDS2
+high_MDS1_high_MDS2[,,2] <- CD_high_MDS1_high_MDS2
+high_MDS1_high_MDS2[,,3] <- EF_high_MDS1_high_MDS2
+
+high_MDS1_high_MDS2_mean <- as.data.frame(apply(high_MDS1_high_MDS2, MARGIN = c(1,2), FUN = mean))
+colnames(high_MDS1_high_MDS2_mean) <- colnames(AB_high_MDS1_high_MDS2)
+high_MDS1_high_MDS2_mean
+
+
+
+
+
+
+AB_low_MDS1_high_MDS2 <- predict.manyglm(mod_int, newdata = new_data_AB_low_MDS1_high_MDS2, type = "response")
+CD_low_MDS1_high_MDS2 <- predict.manyglm(mod_int, newdata = new_data_CD_low_MDS1_high_MDS2, type = "response")
+EF_low_MDS1_high_MDS2 <- predict.manyglm(mod_int, newdata = new_data_EF_low_MDS1_high_MDS2, type = "response")
+
+low_MDS1_high_MDS2 <- array(NA, dim = c(nrow(AB_low_MDS1_high_MDS2), ncol(AB_low_MDS1_high_MDS2), 3))
+low_MDS1_high_MDS2[,,1] <- AB_low_MDS1_high_MDS2
+low_MDS1_high_MDS2[,,2] <- CD_low_MDS1_high_MDS2
+low_MDS1_high_MDS2[,,3] <- EF_low_MDS1_high_MDS2
+
+low_MDS1_high_MDS2_mean <- as.data.frame(apply(low_MDS1_high_MDS2, MARGIN = c(1,2), FUN = mean))
+colnames(low_MDS1_high_MDS2_mean) <- colnames(AB_low_MDS1_high_MDS2)
+low_MDS1_high_MDS2_mean
+
+
+
+
+
+AB_high_MDS1_low_MDS2 <- predict.manyglm(mod_int, newdata = new_data_AB_high_MDS1_low_MDS2, type = "response")
+CD_high_MDS1_low_MDS2 <- predict.manyglm(mod_int, newdata = new_data_CD_high_MDS1_low_MDS2, type = "response")
+EF_high_MDS1_low_MDS2 <- predict.manyglm(mod_int, newdata = new_data_EF_high_MDS1_low_MDS2, type = "response")
+
+high_MDS1_low_MDS2 <- array(NA, dim = c(nrow(AB_high_MDS1_low_MDS2), ncol(AB_high_MDS1_low_MDS2), 3))
+high_MDS1_low_MDS2[,,1] <- AB_high_MDS1_low_MDS2
+high_MDS1_low_MDS2[,,2] <- CD_high_MDS1_low_MDS2
+high_MDS1_low_MDS2[,,3] <- EF_high_MDS1_low_MDS2
+
+high_MDS1_low_MDS2_mean <- as.data.frame(apply(high_MDS1_low_MDS2, MARGIN = c(1,2), FUN = mean))
+colnames(high_MDS1_low_MDS2_mean) <- colnames(AB_high_MDS1_low_MDS2)
+high_MDS1_low_MDS2_mean
+
+
+
+
+AB_low_MDS1_low_MDS2 <- predict.manyglm(mod_int, newdata = new_data_AB_low_MDS1_low_MDS2, type = "response")
+CD_low_MDS1_low_MDS2 <- predict.manyglm(mod_int, newdata = new_data_CD_low_MDS1_low_MDS2, type = "response")
+EF_low_MDS1_low_MDS2 <- predict.manyglm(mod_int, newdata = new_data_EF_low_MDS1_low_MDS2, type = "response")
+
+low_MDS1_low_MDS2 <- array(NA, dim = c(nrow(AB_low_MDS1_low_MDS2), ncol(AB_low_MDS1_low_MDS2), 3))
+low_MDS1_low_MDS2[,,1] <- AB_low_MDS1_low_MDS2
+low_MDS1_low_MDS2[,,2] <- CD_low_MDS1_low_MDS2
+low_MDS1_low_MDS2[,,3] <- EF_low_MDS1_low_MDS2
+
+low_MDS1_low_MDS2_mean <- as.data.frame(apply(low_MDS1_low_MDS2, MARGIN = c(1,2), FUN = mean))
+colnames(low_MDS1_low_MDS2_mean) <- colnames(AB_low_MDS1_low_MDS2)
+low_MDS1_low_MDS2_mean
+
+
+
+
+```
+
+
+
+## Ploting predicted effects 
+
+
+```{r,    fig.width = 10, fig.height = 12, dpi = 600}
+
+sp_names <- colnames(high_MDS1_high_MDS2_mean)
+sp_names <- gsub("\\.", " ", sp_names)
+
+sp_fonts <- rep(3, ncol(high_MDS1_high_MDS2_mean))
+sp_fonts[sp_names == "Chironominae" | sp_names == "Tanypodinae"] <- 1
+
+sp_letters <- c("a)", "b)", "c)", "d)", "e)", "f)", "g)", "h)", "i)", "j)", "k)")
+
+
+#svg(filename = "Plots/Community structure analysis/predicted_species_trajectories.svg", width = 10, height = 12, pointsize = 13)
+
+
+close.screen(all.screens = TRUE)
+split.screen(matrix(c(0,0.3333333,       0.75,1,
+                      0.3333333,0.666666,0.75,1,
+                      0.666666,1,        0.75,1,
+                      0,0.3333333,       0.5,0.75,
+                      0.3333333,0.666666,0.5,0.75,
+                      0.666666,1,        0.5,0.75,
+                      0,0.3333333,       0.25,0.5,
+                      0.3333333,0.666666,0.25,0.5,
+                      0.666666,1,        0.25,0.5,
+                      0,0.3333333,       0,0.25,
+                      0.3333333,0.666666,0,0.25,
+                      0.666666,1,        0,0.25), ncol = 4, nrow = 12, byrow = TRUE))
+
+
+for(i in 1:11){
+  
+screen(i)
+  
+par(mar = c(4,4,1,1), bty = "l")
+  
+ymax <- max(c(high_MDS1_high_MDS2_mean[,i], high_MDS1_low_MDS2_mean[,i], low_MDS1_high_MDS2_mean[,i], low_MDS1_low_MDS2_mean[,i]))*1.3
+
+plot(NA, xlim = c(32 - 10, 158 + 10), ylim = c(0, ymax), xaxt = "n", yaxt = "n", xlab = "", ylab = "")
+
+lines(y = high_MDS1_high_MDS2_mean[,i],                                                                                                                         x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
+          col= "white", lwd = 3)
+lines(y = high_MDS1_high_MDS2_mean[,i],
+          x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
+          col= "#56B4E9", lwd = 2)
+
+
+lines(y = low_MDS1_high_MDS2_mean[,i],                                                                                                                    x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
+          col= "white", lwd = 3)
+lines(y = low_MDS1_high_MDS2_mean[,i],
+          x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
+          col= "#009E73", lwd = 2)
+
+
+lines(y = high_MDS1_low_MDS2_mean[,i],                                                                                                                         x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
+          col= "white", lwd = 3)
+lines(y = high_MDS1_low_MDS2_mean[,i],
+          x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
+          col= "#CC79A7", lwd = 2)
+
+
+lines(y = low_MDS1_low_MDS2_mean[,i],                                                                                                                         x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
+          col= "white", lwd = 3)
+lines(y = low_MDS1_low_MDS2_mean[,i],
+          x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
+          col= "#D55E00", lwd = 2)
+
+
+axis(1, at = c(32, 80, 116, 158))
+title(xlab = "Days", line = 2.5, cex.lab = 1.25)
+
+axis(2, gap.axis = -10, las = 2)
+#title(ylab = "Abundance of", line = 3.75, cex.lab = 1.25)
+title(ylab = sp_names[i], line = 2.5, cex.lab = 1, font.lab = sp_fonts[i])
+
+letters(x = 10, y = 97, sp_letters[i], cex = 1.5)
+
+}
+
+screen(12)
+
+par(mar = c(0.1,0.1,0.1,0.1), bty = "n")
+plot(NA, xlim = c(0, 100), ylim = c(0, 100), xaxt = "n", yaxt = "n", xlab = "", ylab = "")
+legend(legend = c("High nMDS1, high nMDS2",
+                 "High nMDS1, low nMDS2",
+                  "Low nMDS1, high nMDS2",
+                  "Low nMDS1, low nMDS2"), x = 50, y = 50, bty = "n", lty = 1, lwd = 3, col = c("#56B4E9", "#CC79A7", "#009E73","#D55E00"), xjust = 0.5, yjust = 0.5)
+
+  
+#dev.off()
+
+
+```
+
+
+
+
+```{r}
+
+comm_trajectories <- rbind(high_MDS1_high_MDS2_mean, low_MDS1_high_MDS2_mean, high_MDS1_low_MDS2_mean, low_MDS1_low_MDS2_mean)
+
+comm_trajectories_relative <- decostand(comm_trajectories, method = "total", MARGIN = 2)
+
+set.seed(5); nmds_comm_trajectories <- metaMDS(comm_trajectories_relative, distance = "bray", k = 2, trymax  = 100, try = 100, engine = "monoMDS", autotransform  = FALSE)
+
+nmds_comm_trajectories
+```
+
+
+```{r}
+points_high_MDS1_high_MDS2 <- nmds_comm_trajectories$points[1:100,]
+points_low_MDS1_high_MDS2 <- nmds_comm_trajectories$points[101:200,]
+points_high_MDS1_low_MDS2 <- nmds_comm_trajectories$points[201:300,]
+points_low_MDS1_low_MDS2 <- nmds_comm_trajectories$points[301:400,]
+
+species_pred <- nmds_comm_trajectories$species
+```
+
+
+
+
+```{r}
+find_day <- function(day, min, max, length = 100){
+  
+  new_day <- day - min
+  range <- max - min
+  
+  result <- round((new_day*length)/range)
+  
+  if(result == 0){result <- 1}
+  
+  return(result)
+  
+}
+```
+
+
+
+
+```{r,    fig.width = 10, fig.height = 4.5, dpi = 600}
+comm_AM1_nmds
+species <- nmds_comm_AM1_rm_total$species
+
+sp_names <- rownames(species)
+sp_names <- gsub("\\.", " ", sp_names)
+
+
+
+#svg(filename = "Plots/Community structure analysis/community_trajectories.svg", width = 10, height = 4.5, pointsize = 12)
+
+
+
+
+close.screen(all.screens = TRUE)
+split.screen(matrix(c(0  , 0.5, 0, 1  ,
+                      0.5, 1  , 0, 1  ), ncol = 4, nrow = 2, byrow = TRUE))
+
+screen(1)
+par(mar = c(4,4,1,1), bty = "o")
+
+
+xmin <- min(c(comm_AM1_nmds[,1], species[,1]))*1.2
+xmax <- max(c(comm_AM1_nmds[,1], species[,1]))*1.2
+ymin <- min(c(comm_AM1_nmds[,2], species[,2]))*1.2
+ymax <- max(c(comm_AM1_nmds[,2], species[,2]))*1.2
+
+
+
+
+plot(comm_AM1_nmds[,1], comm_AM1_nmds[,2], xlim = c(xmin,xmax), ylim = c(ymin, ymax),
+     type = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "")
+
+
+rect(xleft = 0, ybottom = 0, xright = xmax*1.2, ytop = ymax*1.2 ,col = transparent("#56B4E9", trans.val = 0.75), border = "white", lwd = 4)
+rect(xleft = xmin*1.2, ybottom = ymin*1.2, xright = 0, ytop = 0,col = transparent("#D55E00", trans.val = 0.75), border = "white", lwd = 4)
+rect(xleft = 0, ybottom = ymin*1.2, xright = xmax*1.2, ytop = 0,col = transparent("#CC79A7", trans.val = 0.75), border = "white", lwd = 4)
+rect(xleft = xmin*1.2, ybottom = 0, xright = 0, ytop = ymax*1.2,col = transparent("#009E73", trans.val = 0.75), border = "white", lwd = 4)
+
+
+abline(h = 0, v = 0, lty = 2)
+
+library(scales)
+library(shape)
+
+
+#pal <- col_numeric(palette = c("white", "black"), domain = urb, na.color = "grey50", alpha = FALSE, reverse = FALSE)
+#col <-pal(urb)
+
+points(comm_AM1_nmds[,1],comm_AM1_nmds[,2], col = "grey70", bg = "white", pch = 16, cex = 1.5)
+
+Arrows(x0 <- rep(0, nrow(species)),
+       y0 <- rep(0, nrow(species)),
+       x1 <- species[,1],
+       y1 <- species[,2], arr.type = "triangle", arr.length = 0.4, col = "#C49C94", lwd = 1.5)
+
+text(x = species[,1]*1.2, y = species[,2]*1.2, labels = sp_names, cex = 0.8, col = "black", font = 2)
+
+axis(1, cex.axis = 1)
+axis(2, cex.axis = 1, las = 2)
+title(xlab = "nMDS 1", cex.lab = 1.2, line = 3)
+title(ylab = "nMDS 2", cex.lab = 1.2, line = 3)
+#title(main = "Morphological traits", line = 0.5, adj = 0, cex.main = 1.5)
+letters(x = 10, y = 97, "a)", cex = 1.5)
+
+
+screen(2)
+
+#set.seed(1);species_pred <- jitter(species_pred, amount = 0.25)
+
+xmin <- min(c(points_high_MDS1_high_MDS2[,1], points_low_MDS1_high_MDS2[,1], points_high_MDS1_low_MDS2[,1], points_low_MDS1_low_MDS2[,1],species_pred[,1]))*1.1
+xmax <- max(c(points_high_MDS1_high_MDS2[,1], points_low_MDS1_high_MDS2[,1], points_high_MDS1_low_MDS2[,1], points_low_MDS1_low_MDS2[,1],species_pred[,1]))*1.1
+
+ymin <- min(c(points_high_MDS1_high_MDS2[,2], points_low_MDS1_high_MDS2[,2], points_high_MDS1_low_MDS2[,2], points_low_MDS1_low_MDS2[,2],species_pred[,2]))*1.1
+ymax <- max(c(points_high_MDS1_high_MDS2[,2], points_low_MDS1_high_MDS2[,2], points_high_MDS1_low_MDS2[,2], points_low_MDS1_low_MDS2[,2],species_pred[,2]))*1.1
+
+par(mar = c(4, 4, 1, 1))
+  
+plot(NA, xlim = c(xmin, xmax), ylim = c(ymin, ymax), xlab = "", ylab = "", xaxt = "n", yaxt = "n")
+
+lines(x = points_high_MDS1_high_MDS2[,1], y = points_high_MDS1_high_MDS2[,2], lwd = 3, lty = 1, col = "#56B4E9") #controle
+
+lines(x = points_low_MDS1_high_MDS2[,1], y = points_low_MDS1_high_MDS2[,2], lwd = 3, lty = 1, col = "#009E73") #atrasado
+
+lines(x = points_high_MDS1_low_MDS2[,1], y = points_high_MDS1_low_MDS2[,2], lwd = 3, lty = 1, col = "#CC79A7") #fechado
+
+lines(x = points_low_MDS1_low_MDS2[,1], y = points_low_MDS1_low_MDS2[,2], lwd = 3, lty = 1, col = "#D55E00") #fechado
+
+
+
+#####################################################################
+
+
+
+##################################################
+
+points(x = points_high_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),1],
+       y = points_high_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+
+text(x = points_high_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),1],
+       y = points_high_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, col = "#56B4E9", font = 2)
+
+points(x = points_high_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),1],
+       y = points_high_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+
+text(x = points_high_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),1],
+       y = points_high_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, col = "#56B4E9", font = 2)
+
+points(x = points_high_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),1],
+       y = points_high_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+
+text(x = points_high_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),1],
+       y = points_high_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, col = "#56B4E9", font = 2)
+
+points(x = points_high_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),1],
+       y = points_high_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+
+text(x = points_high_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),1],
+       y = points_high_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, col = "#56B4E9", font = 2)
+#################################################
+
+
+##################################################
+
+points(x = points_low_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),1],
+       y = points_low_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+
+text(x = points_low_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),1],
+       y = points_low_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, font = 2, col = "#009E73")
+
+points(x = points_low_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),1],
+       y = points_low_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+
+text(x = points_low_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),1],
+       y = points_low_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, font = 2, col = "#009E73")
+
+points(x = points_low_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),1],
+       y = points_low_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+
+text(x = points_low_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),1],
+       y = points_low_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, font = 2, col = "#009E73")
+
+points(x = points_low_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),1],
+       y = points_low_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+
+text(x = points_low_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),1],
+       y = points_low_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, font = 2, col = "#009E73")
+#################################################
+
+
+
+##################################################
+
+points(x = points_high_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),1],
+       y = points_high_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#CC79A7", lwd = 3, cex = 3.5)
+
+text(x = points_high_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),1],
+       y = points_high_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, font = 2, col = "#CC79A7")
+
+points(x = points_high_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),1],
+       y = points_high_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#CC79A7", lwd = 3, cex = 3.5)
+
+text(x = points_high_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),1],
+       y = points_high_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, font = 2, col = "#CC79A7")
+
+points(x = points_high_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),1],
+       y = points_high_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#CC79A7", lwd = 3, cex = 3.5)
+
+text(x = points_high_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),1],
+       y = points_high_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, font = 2, col = "#CC79A7")
+
+points(x = points_high_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),1],
+       y = points_high_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#CC79A7", lwd = 3, cex = 3.5)
+
+text(x = points_high_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),1],
+       y = points_high_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, font = 2, col = "#CC79A7")
+#################################################
+
+
+
+
+
+##################################################
+
+points(x = points_low_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),1],
+       y = points_low_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#D55E00", lwd = 3, cex = 3.5)
+
+text(x = points_low_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),1],
+       y = points_low_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, font = 2, col = "#D55E00")
+
+points(x = points_low_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),1],
+       y = points_low_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#D55E00", lwd = 3, cex = 3.5)
+
+text(x = points_low_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),1],
+       y = points_low_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, font = 2, col = "#D55E00")
+
+points(x = points_low_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),1],
+       y = points_low_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#D55E00", lwd = 3, cex = 3.5)
+
+text(x = points_low_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),1],
+       y = points_low_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, font = 2, col = "#D55E00")
+
+points(x = points_low_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),1],
+       y = points_low_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),2],
+       pch = 21, bg = "white", col = "#D55E00", lwd = 3, cex = 3.5)
+
+text(x = points_low_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),1],
+       y = points_low_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, font = 2, col = "#D55E00")
+#################################################
+
+
+
+########################## species_pred #################################
+
+
+sp_names <- rownames(species_pred)
+sp_names <- substr(sp_names, start = 1, stop = 3)
+
+
+for(i in 1:nrow(species_pred)){
+  #points(x = species_pred[i,1],
+   #    y = species_pred[i,2],
+    #   pch = 21, bg = "white", col = "grey50", lwd = 2, cex = 4)
+
+text_contour(x = species_pred[i,1],
+       y = species_pred[i,2], labels = sp_names[i], cex = 0.8, col = "white", thick = 0.004)
+  
+text(x = species_pred[i,1],
+       y = species_pred[i,2], labels = sp_names[i], cex = 0.8, col = "grey30")
+}
+
+
+
+
+axis(1)
+axis(2, cex.axis = 1, las = 2)
+
+title(xlab = "nMDS 1", line = 3, cex.lab = 1.2)
+title(ylab = "nMDS 2", line = 3, cex.lab = 1.2)
+
+letters(x = 10, y = 97, "b)", cex = 1.5)
+
+
+#par(new = TRUE)
+#plot(NA, xlim = c(0, 100), ylim = c(0, 100), xlab = "", ylab = "", xaxt = "n", yaxt = "n", bty = "n")
+
+#legend(x = 100, y = 100, xjust = 1, yjust = 1, lty = c(1,1,1), lwd = 3, legend = c("Control", "Closed", "Late"), col = c("#009E73", "#56B4E9","#D55E00"), bty = "n")
+
+#dev.off()
+
+
+```
+
+
+
+
+
+
+
+
+
