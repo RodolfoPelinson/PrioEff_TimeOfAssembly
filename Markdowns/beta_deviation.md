@@ -79,12 +79,6 @@ Exp_design_all_2$AM_days <- scale(Exp_design_all_2$AM_days)[,1]
 Exp_design_all_2$AM_days_quad <- Exp_design_all_2$AM_days^2
 ```
 
-Making a presence absence matrix
-
-``` r
-comm_all_2_pa <- decostand(comm_all_2, method = "pa")
-```
-
 ## Computing beta deviation
 
 Running the beta deviation analysis keeps gamma diversity within each
@@ -639,63 +633,63 @@ rowSums(comm_all_2[Exp_design_all_2$AM == 4,])
 ## Analysis
 
 ``` r
-mod_obs_null <- glmmTMB(beta_dev$observed_distances ~ 1 + (1|sites), data = Exp_design_all_2)
+mod_obs_null <- glmmTMB(beta_dev$observed_distances ~ 1 + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
 ```
 
-    ## Warning in glmmTMB(beta_dev$observed_distances ~ 1 + (1 | sites), data =
-    ## Exp_design_all_2): use of the '$' operator in formulas is not recommended
-
-``` r
-mod_exp_null <- glmmTMB(beta_dev$expected_distances ~ 1 + (1|sites), data = Exp_design_all_2)
-```
-
-    ## Warning in glmmTMB(beta_dev$expected_distances ~ 1 + (1 | sites), data =
-    ## Exp_design_all_2): use of the '$' operator in formulas is not recommended
-
-``` r
-mod_dev_null <- glmmTMB(beta_dev$deviation_distances ~ 1 + (1|sites), data = Exp_design_all_2)
-```
-
-    ## Warning in glmmTMB(beta_dev$deviation_distances ~ 1 + (1 | sites), data =
-    ## Exp_design_all_2): use of the '$' operator in formulas is not recommended
-
-``` r
-mod_obs_am_num <- glmmTMB(beta_dev$observed_distances ~ AM_days + (1|sites), data = Exp_design_all_2)
-```
-
-    ## Warning in glmmTMB(beta_dev$observed_distances ~ AM_days + (1 | sites), : use
+    ## Warning in glmmTMB(beta_dev$observed_distances ~ 1 + (1 | block2/sites), : use
     ## of the '$' operator in formulas is not recommended
 
 ``` r
-mod_exp_am_num <- glmmTMB(beta_dev$expected_distances ~ AM_days + (1|sites), data = Exp_design_all_2)
+mod_exp_null <- glmmTMB(beta_dev$expected_distances ~ 1 + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
 ```
 
-    ## Warning in glmmTMB(beta_dev$expected_distances ~ AM_days + (1 | sites), : use
+    ## Warning in glmmTMB(beta_dev$expected_distances ~ 1 + (1 | block2/sites), : use
     ## of the '$' operator in formulas is not recommended
 
 ``` r
-mod_dev_am_num <- glmmTMB(beta_dev$deviation_distances ~ AM_days + (1|sites), data = Exp_design_all_2)
+mod_dev_null <- glmmTMB(beta_dev$deviation_distances ~ 1 + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
 ```
 
-    ## Warning in glmmTMB(beta_dev$deviation_distances ~ AM_days + (1 | sites), : use
+    ## Warning in glmmTMB(beta_dev$deviation_distances ~ 1 + (1 | block2/sites), : use
     ## of the '$' operator in formulas is not recommended
 
 ``` r
-mod_obs_am_num_quad <- glmmTMB(beta_dev$observed_distances ~ AM_days + AM_days_quad + (1|sites), data = Exp_design_all_2)
+mod_obs_am_num <- glmmTMB(beta_dev$observed_distances ~ AM_days + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(beta_dev$observed_distances ~ AM_days + (1 | block2/sites),
+    ## : use of the '$' operator in formulas is not recommended
+
+``` r
+mod_exp_am_num <- glmmTMB(beta_dev$expected_distances ~ AM_days + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(beta_dev$expected_distances ~ AM_days + (1 | block2/sites),
+    ## : use of the '$' operator in formulas is not recommended
+
+``` r
+mod_dev_am_num <- glmmTMB(beta_dev$deviation_distances ~ AM_days + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(beta_dev$deviation_distances ~ AM_days + (1 | block2/sites),
+    ## : use of the '$' operator in formulas is not recommended
+
+``` r
+mod_obs_am_num_quad <- glmmTMB(beta_dev$observed_distances ~ AM_days + AM_days_quad + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
 ```
 
     ## Warning in glmmTMB(beta_dev$observed_distances ~ AM_days + AM_days_quad + : use
     ## of the '$' operator in formulas is not recommended
 
 ``` r
-mod_exp_am_num_quad <- glmmTMB(beta_dev$expected_distances ~ AM_days + AM_days_quad + (1|sites), data = Exp_design_all_2)
+mod_exp_am_num_quad <- glmmTMB(beta_dev$expected_distances ~ AM_days + AM_days_quad + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
 ```
 
     ## Warning in glmmTMB(beta_dev$expected_distances ~ AM_days + AM_days_quad + : use
     ## of the '$' operator in formulas is not recommended
 
 ``` r
-mod_dev_am_num_quad <- glmmTMB(beta_dev$deviation_distances ~ AM_days + AM_days_quad + (1|sites), data = Exp_design_all_2)
+mod_dev_am_num_quad <- glmmTMB(beta_dev$deviation_distances ~ AM_days + AM_days_quad + (1|block2/sites), data = Exp_design_all_2)
 ```
 
     ## Warning in glmmTMB(beta_dev$deviation_distances ~ AM_days + AM_days_quad + :
@@ -708,17 +702,17 @@ anova_obs
 
     ## Data: Exp_design_all_2
     ## Models:
-    ## mod_obs_null: beta_dev$observed_distances ~ 1 + (1 | sites), zi=~0, disp=~1
-    ## mod_obs_am_num: beta_dev$observed_distances ~ AM_days + (1 | sites), zi=~0, disp=~1
-    ## mod_obs_am_num_quad: beta_dev$observed_distances ~ AM_days + AM_days_quad + (1 | sites), zi=~0, disp=~1
-    ##                     Df     AIC      BIC logLik deviance  Chisq Chi Df
-    ## mod_obs_null         3 -104.08  -96.387 55.040  -110.08              
-    ## mod_obs_am_num       4 -111.71 -101.450 59.853  -119.71 9.6267      1
-    ## mod_obs_am_num_quad  5 -111.42  -98.594 60.708  -121.42 1.7087      1
-    ##                     Pr(>Chisq)   
-    ## mod_obs_null                     
-    ## mod_obs_am_num        0.001918 **
-    ## mod_obs_am_num_quad   0.191155   
+    ## mod_obs_null: beta_dev$observed_distances ~ 1 + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_obs_am_num: beta_dev$observed_distances ~ AM_days + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_obs_am_num_quad: beta_dev$observed_distances ~ AM_days + AM_days_quad + (1 | block2/sites), zi=~0, disp=~1
+    ##                     Df     AIC     BIC logLik deviance  Chisq Chi Df Pr(>Chisq)
+    ## mod_obs_null         4 -102.08 -91.823 55.040  -110.08                         
+    ## mod_obs_am_num       5 -109.70 -96.882 59.852  -119.70 9.6241      1    0.00192
+    ## mod_obs_am_num_quad  6 -109.41 -94.025 60.706  -121.41 1.7072      1    0.19135
+    ##                       
+    ## mod_obs_null          
+    ## mod_obs_am_num      **
+    ## mod_obs_am_num_quad   
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -729,13 +723,13 @@ anova_exp
 
     ## Data: Exp_design_all_2
     ## Models:
-    ## mod_exp_null: beta_dev$expected_distances ~ 1 + (1 | sites), zi=~0, disp=~1
-    ## mod_exp_am_num: beta_dev$expected_distances ~ AM_days + (1 | sites), zi=~0, disp=~1
-    ## mod_exp_am_num_quad: beta_dev$expected_distances ~ AM_days + AM_days_quad + (1 | sites), zi=~0, disp=~1
+    ## mod_exp_null: beta_dev$expected_distances ~ 1 + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_exp_am_num: beta_dev$expected_distances ~ AM_days + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_exp_am_num_quad: beta_dev$expected_distances ~ AM_days + AM_days_quad + (1 | block2/sites), zi=~0, disp=~1
     ##                     Df     AIC     BIC logLik deviance  Chisq Chi Df Pr(>Chisq)
-    ## mod_exp_null         3 -220.90 -213.20 113.45  -226.90                         
-    ## mod_exp_am_num       4 -219.88 -209.62 113.94  -227.88 0.9818      1    0.32174
-    ## mod_exp_am_num_quad  5 -225.20 -212.38 117.60  -235.20 7.3223      1    0.00681
+    ## mod_exp_null         4 -218.89 -208.63 113.44  -226.89                         
+    ## mod_exp_am_num       5 -217.88 -205.06 113.94  -227.88 0.9871      1   0.320451
+    ## mod_exp_am_num_quad  6 -223.20 -207.81 117.60  -235.20 7.3221      1   0.006811
     ##                       
     ## mod_exp_null          
     ## mod_exp_am_num        
@@ -750,14 +744,14 @@ anova_dev
 
     ## Data: Exp_design_all_2
     ## Models:
-    ## mod_dev_null: beta_dev$deviation_distances ~ 1 + (1 | sites), zi=~0, disp=~1
-    ## mod_dev_am_num: beta_dev$deviation_distances ~ AM_days + (1 | sites), zi=~0, disp=~1
+    ## mod_dev_null: beta_dev$deviation_distances ~ 1 + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_dev_am_num: beta_dev$deviation_distances ~ AM_days + (1 | block2/sites), zi=~0, disp=~1
     ## mod_dev_am_num_quad: beta_dev$deviation_distances ~ AM_days + AM_days_quad + (1 | , zi=~0, disp=~1
-    ## mod_dev_am_num_quad:     sites), zi=~0, disp=~1
+    ## mod_dev_am_num_quad:     block2/sites), zi=~0, disp=~1
     ##                     Df    AIC    BIC  logLik deviance   Chisq Chi Df Pr(>Chisq)
-    ## mod_dev_null         3 360.08 367.77 -177.04   354.08                          
-    ## mod_dev_am_num       4 350.20 360.46 -171.10   342.20 11.8801      1  0.0005674
-    ## mod_dev_am_num_quad  5 352.17 364.99 -171.09   342.17  0.0262      1  0.8713724
+    ## mod_dev_null         4 362.08 372.34 -177.04   354.08                          
+    ## mod_dev_am_num       5 352.18 365.00 -171.09   342.18 11.9002      1  0.0005613
+    ## mod_dev_am_num_quad  6 354.15 369.54 -171.08   342.15  0.0263      1  0.8711126
     ##                        
     ## mod_dev_null           
     ## mod_dev_am_num      ***
@@ -769,19 +763,19 @@ anova_dev
 plot(simulateResiduals(mod_obs_am_num_quad))
 ```
 
-![](beta_deviation_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](beta_deviation_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ``` r
 plot(simulateResiduals(mod_exp_am_num_quad))
 ```
 
-![](beta_deviation_files/figure-gfm/unnamed-chunk-14-2.png)<!-- -->
+![](beta_deviation_files/figure-gfm/unnamed-chunk-13-2.png)<!-- -->
 
 ``` r
 plot(simulateResiduals(mod_dev_am_num_quad))
 ```
 
-![](beta_deviation_files/figure-gfm/unnamed-chunk-14-3.png)<!-- -->
+![](beta_deviation_files/figure-gfm/unnamed-chunk-13-3.png)<!-- -->
 
 ## Making predictions
 
@@ -885,4 +879,4 @@ letters(x = 5, y = 97, "b)", cex = 1.5)
 #dev.off()
 ```
 
-![](beta_deviation_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
+![](beta_deviation_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->

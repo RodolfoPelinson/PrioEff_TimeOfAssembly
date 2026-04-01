@@ -83,11 +83,6 @@ Exp_design_all_2$AM_days_quad <- Exp_design_all_2$AM_days^2
 
 ```
 
-Making a presence absence matrix
-```{r}
-comm_all_2_pa <- decostand(comm_all_2, method = "pa")
-```
-
 
 ## Computing beta deviation
 
@@ -281,17 +276,17 @@ rowSums(comm_all_2[Exp_design_all_2$AM == 4,])
 
 
 ```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
-mod_obs_null <- glmmTMB(beta_dev$observed_distances ~ 1 + (1|sites), data = Exp_design_all_2)
-mod_exp_null <- glmmTMB(beta_dev$expected_distances ~ 1 + (1|sites), data = Exp_design_all_2)
-mod_dev_null <- glmmTMB(beta_dev$deviation_distances ~ 1 + (1|sites), data = Exp_design_all_2)
+mod_obs_null <- glmmTMB(beta_dev$observed_distances ~ 1 + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+mod_exp_null <- glmmTMB(beta_dev$expected_distances ~ 1 + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+mod_dev_null <- glmmTMB(beta_dev$deviation_distances ~ 1 + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
 
-mod_obs_am_num <- glmmTMB(beta_dev$observed_distances ~ AM_days + (1|sites), data = Exp_design_all_2)
-mod_exp_am_num <- glmmTMB(beta_dev$expected_distances ~ AM_days + (1|sites), data = Exp_design_all_2)
-mod_dev_am_num <- glmmTMB(beta_dev$deviation_distances ~ AM_days + (1|sites), data = Exp_design_all_2)
+mod_obs_am_num <- glmmTMB(beta_dev$observed_distances ~ AM_days + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+mod_exp_am_num <- glmmTMB(beta_dev$expected_distances ~ AM_days + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+mod_dev_am_num <- glmmTMB(beta_dev$deviation_distances ~ AM_days + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
 
-mod_obs_am_num_quad <- glmmTMB(beta_dev$observed_distances ~ AM_days + AM_days_quad + (1|sites), data = Exp_design_all_2)
-mod_exp_am_num_quad <- glmmTMB(beta_dev$expected_distances ~ AM_days + AM_days_quad + (1|sites), data = Exp_design_all_2)
-mod_dev_am_num_quad <- glmmTMB(beta_dev$deviation_distances ~ AM_days + AM_days_quad + (1|sites), data = Exp_design_all_2)
+mod_obs_am_num_quad <- glmmTMB(beta_dev$observed_distances ~ AM_days + AM_days_quad + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+mod_exp_am_num_quad <- glmmTMB(beta_dev$expected_distances ~ AM_days + AM_days_quad + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+mod_dev_am_num_quad <- glmmTMB(beta_dev$deviation_distances ~ AM_days + AM_days_quad + (1|block2/sites), data = Exp_design_all_2)
 
 anova_obs <- anova(mod_obs_null, mod_obs_am_num, mod_obs_am_num_quad)
 anova_obs
