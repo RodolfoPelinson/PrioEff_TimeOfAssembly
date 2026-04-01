@@ -107,6 +107,17 @@ sum(c(pca_env$CA$eig/sum(pca_env$CA$eig))[1:3])
 ``` r
 Env_st_pca <- data.frame(pca_env$CA$u[,1:3])
 
+pca_env$CA$v
+```
+
+    ##                      PC1         PC2         PC3         PC4          PC5
+    ## pH             0.4150214 -0.53603873 -0.34086337 -0.63931592  0.124527215
+    ## OD            -0.2177026 -0.01144279 -0.90912048  0.35480576  0.009351906
+    ## Condutividade -0.5654481 -0.39557080  0.15524869  0.01946294  0.706619556
+    ## Temperatura    0.3544170 -0.63877065  0.17445318  0.64729547 -0.130135807
+    ## TDS           -0.5788090 -0.38474320  0.05268818 -0.21451760 -0.684221448
+
+``` r
 comm_all_prior_total <- data.frame(decostand(comm_all_prior, method = "total", MARGIN = 2))
 set.seed(1); nmds_prior <- metaMDS(comm_all_prior_total, distance  = "bray", k = 3, try = 100, trymax = 100)
 ```

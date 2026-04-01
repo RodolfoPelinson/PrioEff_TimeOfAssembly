@@ -2,6 +2,7 @@
 title: "Variation partitioning  with previous community"
 author: "Rodolfo Pelinson"
 date: "2025-10-17"
+output: github_document
 editor_options: 
   chunk_output_type: console
 ---
