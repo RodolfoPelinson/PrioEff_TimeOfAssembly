@@ -18,12 +18,12 @@ knitr::opts_chunk$set(
 
 The goal of this repository is to guide readers of the paper through the data analysis, step by step.
 
-[Do communities become more variable over time?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/beta_deviation.md)
+[How does community variability change over time?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/beta_deviation.md)
 
-[Do community trajectories in time change depending on the initial community structure?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/Effect_first_survey_on_time.md)
+[Do different initial community structures produce different trajectories of community assembly?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/Effect_first_survey_on_time.md)
 
-[Is the imediate previous community structure a better predictor of future structures than the simple effect of time, environment or spatial blocks?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/Variation_partitioning_reduced_dimensionality.md)
+[Is a previous community structure a relevant predictor of future structures when compared to other predictors?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/Variation_partitioning_reduced_dimensionality.md)
 
-[For long in the past can previous community structure explain future structures?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/Variation_partitioning_first_last.md)
+[Is a previous community structure a relevant predictor of future structures when compared to other predictors? For how long?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/Variation_partitioning_first_last.md)
 
-[Does the timing of communtiy assembly matters?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/late_treatment.md)
+[How does the timing of assembly affect assembly dynamics?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/late_treatment.md)

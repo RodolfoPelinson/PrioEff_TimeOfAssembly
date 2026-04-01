@@ -69,15 +69,16 @@ nrow(Exp_design_all_2)
 
 To reduce dimensionality of data and standardize as much as possible the number of predictors in each set of predictors we ran a nmds on the prior community state matrix and a PCA on the environmental predictors
 
-```{r}
+```{r, message = FALSE}
 ID <-  as.factor(Exp_design_all_2$sites)
 block <-  data.frame(block2 = Exp_design_all_2$block2)
 
 Env_st <- decostand(Env_new, method = "stand")
 pca_env <- rda(Env_st)
 sum(c(pca_env$CA$eig/sum(pca_env$CA$eig))[1:3])
-
 Env_st_pca <- data.frame(pca_env$CA$u[,1:3])
+
+pca_env$CA$v
 
 comm_all_prior_total <- data.frame(decostand(comm_all_prior, method = "total", MARGIN = 2))
 set.seed(1); nmds_prior <- metaMDS(comm_all_prior_total, distance  = "bray", k = 3, try = 100, trymax = 100)
@@ -96,6 +97,7 @@ predictors <- list(block = block,
 
 lapply(predictors, FUN = nrow)
 lapply(predictors, FUN = ncol)
+
 
 ```
 
