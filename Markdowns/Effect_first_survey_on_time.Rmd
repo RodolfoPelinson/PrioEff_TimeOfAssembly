@@ -496,6 +496,85 @@ legend(legend = c("High nMDS1, high nMDS2",
 ```
 
 
+## Plotting coefficients
+
+```{r,    fig.width = 10, fig.height = 4.5, dpi = 600}
+
+sp_names <- colnames(mod_int$coefficients)
+sp_names <- gsub("\\.", " ", sp_names)
+
+sp_names[sp_names == "Dendropsophus minutus"] <- "D. minutus"
+sp_names[sp_names == "Scinax fuscovarius"] <- "S. fuscovarius"
+
+sp_font <- rep(3, length(sp_names))
+sp_font[sp_names == "Chironominae"] <- 1
+sp_font[sp_names == "Tanypodinae"] <- 1
+
+interaction_coefs <- data.frame(t(mod_int$coefficients[(nrow(mod_int$coefficients)-3):nrow(mod_int$coefficients),]))
+interaction_coefs_se <- data.frame(t(mod_int$stderr.coefficients[(nrow(mod_int$stderr.coefficients)-3):nrow(mod_int$stderr.coefficients),]))
+
+interaction_upper <- interaction_coefs + (interaction_coefs_se * qnorm(0.975))
+interaction_lower <- interaction_coefs + (interaction_coefs_se * qnorm(0.025))
+
+
+#svg(filename = "Plots/Community structure analysis/community_trajectories_coefs.svg", width = 10, height = 4.5, pointsize = 12)
+
+
+close.screen(all.screens = TRUE)
+split.screen(matrix(c(0 , 0.1, 0, 1  ,
+                      0.1, 0.325, 0, 1,
+                      0.325, 0.55, 0, 1,
+                      0.55, 0.775, 0, 1,
+                      0.775, 1, 0, 1), ncol = 4, nrow = 5, byrow = TRUE))
+
+
+screen(2)
+par(mar = c(4,2,2,0.5))
+
+My_coefplot(mles = interaction_coefs$MDS1.AM_days_sc, upper = interaction_upper$MDS1.AM_days_sc,
+            lower = interaction_lower$MDS1.AM_days_sc, col_sig = "red",
+            cex_sig = 1.5, species_labels = sp_names, yaxis_font = sp_font, cex.axis = 0.9)
+title(xlab = "nMDS1 : Time", cex.lab = 1, line = 2.5)
+#screen(2, new = FALSE)
+letters(x = 12, y = 94, "a)", cex = 1.5)
+
+screen(3)
+par(mar = c(4,2,2,0.5))
+
+My_coefplot(mles = interaction_coefs$MDS2.AM_days_sc, upper = interaction_upper$MDS2.AM_days_sc,
+            lower = interaction_lower$MDS2.AM_days_sc, col_sig = "red",
+            cex_sig = 1.5, species_labels = FALSE, yaxis_font = sp_font, cex.axis = 0.9)
+title(xlab = "nMDS2 : Time", cex.lab = 1, line = 2.5)
+#screen(2, new = FALSE)
+letters(x = 12, y = 94, "b)", cex = 1.5)
+
+screen(4)
+par(mar = c(4,2,2,0.5))
+
+My_coefplot(mles = interaction_coefs$MDS1.AM_days_sc_squared, upper = interaction_upper$MDS1.AM_days_sc_squared,
+            lower = interaction_lower$MDS1.AM_days_sc_squared, col_sig = "red",
+            cex_sig = 1.5, species_labels = FALSE, yaxis_font = sp_font, cex.axis = 0.9, xlim = c(-2,5))
+title(xlab = "nMDS1 : Time²", cex.lab = 1, line = 2.5)
+#screen(2, new = FALSE)
+letters(x = 12, y = 94, "c)", cex = 1.5)
+
+screen(5)
+par(mar = c(4,2,2,0.5))
+
+My_coefplot(mles = interaction_coefs$MDS2.AM_days_sc_squared, upper = interaction_upper$MDS2.AM_days_sc_squared,
+            lower = interaction_lower$MDS2.AM_days_sc_squared, col_sig = "red",
+            cex_sig = 1.5, species_labels = FALSE, yaxis_font = sp_font, cex.axis = 0.9, xlim = c(-6,2))
+title(xlab = "nMDS2 : Time²", cex.lab = 1, line = 2.5)
+#screen(2, new = FALSE)
+letters(x = 12, y = 94, "d)", cex = 1.5)
+
+#dev.off()
+
+```
+
+
+
+
 
 
 ```{r}
