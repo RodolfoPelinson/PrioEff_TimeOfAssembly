@@ -74,8 +74,19 @@ Exp_design_all_2$AM_days[Exp_design_all_2$AM_days == 4] <- 158
 
 Exp_design_all_2$AM_days_orig <- Exp_design_all_2$AM_days
 
-Exp_design_all_2$AM_days <- scale(Exp_design_all_2$AM_days)[,1]
+Exp_design_all_2$AM_days <- scale(Exp_design_all_2$AM_days)
+attr_AM_days <- attributes(Exp_design_all_2$AM_days)
 
+unscale <- function(x, atributes, reverse = FALSE){
+  if(isTRUE(reverse)){
+      x <- (x - atributes$`scaled:center`) / atributes$`scaled:scale` 
+  }else{
+      x <- (x * atributes$`scaled:scale`) + atributes$`scaled:center`
+  }
+  return(x)
+}
+
+Exp_design_all_2$AM_days <- Exp_design_all_2$AM_days[,1]
 Exp_design_all_2$AM_days_quad <- Exp_design_all_2$AM_days^2
 ```
 
@@ -880,3 +891,60 @@ letters(x = 5, y = 97, "b)", cex = 1.5)
 ```
 
 ![](beta_deviation_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+Percentage increase in observed community variability:
+
+``` r
+preds <- predict(mod_obs_am_num, newdata = data.frame(AM_days = c(unscale(32, attr_AM_days, TRUE),
+                                                         unscale(158, attr_AM_days, TRUE))), se.fit = TRUE, re.form = NA)
+((preds$fit[2] - preds$fit[1]) / preds$fit[1]) * 100
+```
+
+    ## eta_predict 
+    ##    27.35382
+
+Peak of expected community variability:
+
+``` r
+peak <- new_data_days$AM_days[which(predicted_exp_quad$fit %in% max(predicted_exp_quad$fit))]
+unscale(peak, attr_AM_days, FALSE)
+```
+
+    ## [1] 102
+
+Percentage increase up to the peak of expected community variability :
+
+``` r
+newdata <- data.frame(AM_days = c(unscale(32, attr_AM_days, TRUE), peak),
+                      AM_days_quad = c(unscale(32, attr_AM_days, TRUE), peak)^2)
+preds <- predict(mod_exp_am_num_quad, newdata = newdata, se.fit = TRUE, re.form = NA)
+((preds$fit[2] - preds$fit[1]) / preds$fit[1]) * 100
+```
+
+    ## eta_predict 
+    ##    14.55751
+
+Percentage decrease in expected community variability from the peak up
+to the end of the experiment:
+
+``` r
+newdata <- data.frame(AM_days = c(peak, unscale(158, attr_AM_days, TRUE)),
+                      AM_days_quad = c(peak, unscale(158, attr_AM_days, TRUE))^2)
+preds <- predict(mod_exp_am_num_quad, newdata = newdata, se.fit = TRUE, re.form = NA)
+((preds$fit[2] - preds$fit[1]) / preds$fit[1]) * 100
+```
+
+    ## eta_predict 
+    ##   -8.167786
+
+Percentage increase in deviation variability:
+
+``` r
+preds <- predict(mod_dev_am_num, newdata = data.frame(AM_days = c(unscale(32, attr_AM_days, TRUE),
+                                                         unscale(158, attr_AM_days, TRUE))), se.fit = TRUE, re.form = NA)
+
+((preds$fit[2] - preds$fit[1]) / preds$fit[1]) * 100
+```
+
+    ## eta_predict 
+    ##    308.5813
