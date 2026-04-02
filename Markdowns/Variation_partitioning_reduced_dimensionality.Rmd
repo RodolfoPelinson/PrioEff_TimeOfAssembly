@@ -7,7 +7,6 @@ editor_options:
   chunk_output_type: console
 ---
 
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
@@ -32,8 +31,8 @@ library(mvabund)
 source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
 ```
 
-
 Building the community matrix with one step in time delayed (the predictor community)
+
 ```{r}
 #Excluding the first survey
 comm_all_2 <- comm_all[Exp_design_all$AM != 1,]
@@ -65,8 +64,6 @@ nrow(comm_all_prior)
 nrow(Env_new)
 nrow(Exp_design_all_2)
 ```
-
-
 
 To reduce dimensionality of data and standardize as much as possible the number of predictors in each set of predictors we ran a nmds on the prior community state matrix and a PCA on the environmental predictors
 
@@ -104,11 +101,7 @@ lapply(predictors, FUN = ncol)
 
 We ended up with this number of predictors:
 
-Prior community structure: 2
-Time: 2
-Environment: 2
-Block: 1 factor with 3 levels (effectively 2 predictors)
-
+Prior community structure: 2 Time: 2 Environment: 2 Block: 1 factor with 3 levels (effectively 2 predictors)
 
 Variation partitioning
 
@@ -121,8 +114,8 @@ total_r2 <- varpart_priority$R2_models$`block-Env-Time-Priority`
 total_r2
 ```
 
-
 Scaling fractions so the added partial ones won't larger than the total R² of the model (which may sometime happen).
+
 ```{r}
 
 
@@ -203,10 +196,8 @@ shared_priority_others[shared_priority_others < 0] <- 0
 shared_priority_others_scaled <- shared_priority_others * scale_shared
 ```
 
-
-
-
 Plot including shared effects between priority effects and others/
+
 ```{r,   fig.width = 6, fig.height = 5, dpi = 600, dev.args= list(pointsize=9)}
 
 at_generator <- function(first, spacing, n){
@@ -320,11 +311,8 @@ axis(2, las = 2, line = 0)
 
 ```
 
-
-
-
-
 Now testing the significance of these fractions
+
 ```{r, cache = TRUE}
 set.seed(3)
 control <- permute::how(within = permute::Within(type = 'free'),
@@ -358,4 +346,3 @@ anova_Priority <- anova(varpart_priority$models$Priority, varpart_priority$model
 anova_Priority
 
 ```
-
