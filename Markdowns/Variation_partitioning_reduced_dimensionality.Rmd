@@ -101,7 +101,10 @@ lapply(predictors, FUN = ncol)
 
 We ended up with this number of predictors:
 
-Prior community structure: 2 Time: 2 Environment: 2 Block: 1 factor with 3 levels (effectively 2 predictors)
+Prior community structure: 3
+Time: 2
+Environment: 3
+Block: 1 factor with 3 levels (effectively 2 predictors)
 
 Variation partitioning
 
