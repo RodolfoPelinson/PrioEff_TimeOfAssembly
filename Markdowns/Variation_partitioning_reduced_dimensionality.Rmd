@@ -19,6 +19,7 @@ dir<-("C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly")
 source(paste(sep = "/",dir,"functions/remove_sp.R"))
 source(paste(sep = "/",dir,"functions/varpart_manyglm.R"))
 source(paste(sep = "/",dir,"functions/R2_manyglm.R"))
+source(paste(sep = "/",dir,"functions/letters.R"))
 ```
 
 ```{r, message = FALSE, warning = FALSE}
@@ -220,8 +221,8 @@ split.screen(matrix(c(0,0.3,0.625,1,
                       0.3,1,0.25,0.625), ncol = 4, nrow = 4, byrow = TRUE))
 
 screen(4)
-par(mar = c(2,1,1,1))
-barplot(full_model_sp, ylim = c(0,0.7), las = 2, border = "white", col = "#C7C7C7", xaxt = "n", xaxs = "i", width = 1, space = 0.5, xlim = c(0,20), yaxt = "n")
+par(mar = c(2,1,1.5,1), xpd = NA)
+barplot(full_model_sp, ylim = c(0,0.7), las = 2, border = "white", col = "#C7C7C7", xaxt = "n", xaxs = "i", width = 1, space = 0.5, xlim = c(0,20), yaxt = "n", ylab = "", xlab = "")
 par(new = TRUE)
 pure_scaleds <- rbind(pure_block_scaled, pure_Env_scaled, pure_Time_scaled, pure_Priority_scaled, shared_priority_others_scaled)
 barplot(pure_scaleds, ylim = c(0,0.7), las = 2, col = c("#98DF8A", "#9EDAE5", "#FFBB78", "#F7B6D2", "#C5B0D5"), border = "white", xaxt = "n", xaxs = "i", width = 1, space = 0.5, xlim = c(0,20), yaxt = "n")
@@ -245,16 +246,18 @@ axis(1, at = at_generator(first = 1, spacing = 1.5, n = length(names3)), gap.axi
 
 
 axis(2, las = 2, line = 0, labels = FALSE)
-
-par(new = TRUE, mar = c(0,0,0,0), bty = "n")
-plot(NA, xlim = c(0,100), ylim = c(0,100), xaxt = "n", yaxt = "n", xaxs = "i", yaxs = "i", )
+letters(x = -2, y = 95, "d)", cex = 1.5)
 
 
+#par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+#plot(NA, xlim = c(0,100), ylim = c(0,100), xaxt = "n", yaxt = "n", xaxs = "i", yaxs = "i", )
 
 
-screen(3)
-par(mar = c(2,4,1,1))
-barplot(total_r2, ylim = c(0,0.7), las = 2, border = "white", col = "#C7C7C7", xaxt = "n", xaxs = "i", width = 1, space = 0.5, xlim = c(0,2), yaxt = "n")
+
+
+screen(3, new = FALSE)
+par(mar = c(2,4,1.5,1), xpd = NA)
+barplot(total_r2, ylim = c(0,0.7), las = 2, border = "white", col = "#C7C7C7", xaxt = "n", xaxs = "i", width = 1, space = 0.5, xlim = c(0,2), yaxt = "n", ylab = "", xlab = "")
 par(new = TRUE)
 
 shared_priority_com <- varpart_priority$R2_fractions_com[4,1] - varpart_priority$R2_fractions_com[4,2]
@@ -268,12 +271,13 @@ axis(1, at = c(1), gap.axis = -10, tick = FALSE, labels = "Community", las = 1, 
 
 title(ylab = "Likelihood ratio R²", cex.lab = 1.25)
 axis(2, las = 2, line = 0)
+letters(x = 5, y = 95, "c)", cex = 1.5)
 
 
-screen(2)
-par(mar = c(2,1,1,1))
+screen(2, new = FALSE)
+par(mar = c(2,1,1.5,1), xpd = NA)
 pure_scaleds <- rbind(full_block, full_Env, full_Time, full_Priority)
-barplot(pure_scaleds, ylim = c(0,0.7), las = 2, col = c("#98DF8A", "#9EDAE5", "#FFBB78", "#F7B6D2"), border = "transparent", xaxt = "n", xaxs = "i", width = 1, space = c(0,2), xlim = c(0,80), yaxt = "n", beside = TRUE)
+barplot(pure_scaleds, ylim = c(0,0.7), las = 2, col = c("#98DF8A", "#9EDAE5", "#FFBB78", "#F7B6D2"), border = "transparent", xaxt = "n", xaxs = "i", width = 1, space = c(0,2), xlim = c(0,80), yaxt = "n", beside = TRUE, ylab = "", xlab = "")
 box(bty = "l")
 names <- colnames(pure_scaleds)
 names <- gsub("\\."," ", names)
@@ -283,21 +287,24 @@ font[names == "Chironominae" | names == "Tanypodinae"] <- 1
 axis(1, at = at_generator(first = 4, spacing = 6, n = length(names)), gap.axis = -10, tick = TRUE, labels = FALSE, las = 2, font = 3, line = 0)
 #axis(1, at = at_generator(first = 4, spacing = 6, n = length(c(names[1:8], c("",""),names[11:13]))), gap.axis = -10, tick = FALSE, labels = c(names[1:8], c("",""),names[11:13]), las = 2, font = 3, line = 0)
 #axis(1, at = at_generator(first = 4, spacing = 6, n = length(c(rep("",8), names[9:10],rep("",3)))), gap.axis = -10, tick = FALSE, labels = c(rep("",8), names[9:10],rep("",3)), las = 2, font = 1, line = 0)
-
 axis(2, las = 2, line = 0, labels = FALSE)
 
+letters(x = -2, y = 95, "b)", cex = 1.5)
+
+
 par(new = TRUE, mar = c(0,0,0,0), bty = "n")
-plot(NA, xlim = c(0,100), ylim = c(0,100), xaxt = "n", yaxt = "n", xaxs = "i", yaxs = "i", )
+plot(NA, xlim = c(0,100), ylim = c(0,100), xaxt = "n", yaxt = "n", xaxs = "i", yaxs = "i", ylab = "", xlab = "")
 
 legend(x = 99, y = 99, xjust = 1, yjust = 1, fill = c("#98DF8A", "#9EDAE5", "#FFBB78","#F7B6D2", "#C5B0D5", "#C7C7C7"),
-       legend = c("Block", "Water parameters", "Time", "Priority effects", "Shared with priority effects", "Shared among others"), border = "white", bty = "n")
+       legend = c("Block", "Water parameters", "Time", "Previous structure", "Shared with previous structure", "Shared among others"), border = "white", bty = "n")
 
-screen(1)
-par(mar = c(2,4,1,1))
+
+screen(1, new = FALSE)
+par(mar = c(2,4,1.5,1), xpd = NA)
 
 pure_scaleds <- as.matrix(varpart_priority$R2_fractions_com$R2_full_fraction)
 
-barplot(pure_scaleds, ylim = c(0,0.7), las = 2, col = c("#98DF8A", "#9EDAE5", "#FFBB78", "#F7B6D2", "#C5B0D5"), border = "white", xaxt = "n", xaxs = "i", width = 1, space = c(0,1), xlim = c(0,6), yaxt = "n", beside = TRUE)
+barplot(pure_scaleds, ylim = c(0,0.7), las = 2, col = c("#98DF8A", "#9EDAE5", "#FFBB78", "#F7B6D2", "#C5B0D5"), border = "white", xaxt = "n", xaxs = "i", width = 1, space = c(0,1), xlim = c(0,6), yaxt = "n", beside = TRUE, ylab = "", xlab = "")
 box(bty = "l")
 #axis(1, at = c(3), gap.axis = -10, tick = FALSE, labels = "Community", las = 1, font = 1, line = -0.5)
 #title(ylab = "Likelihood ratio R²", cex.lab = 1.25)
@@ -307,6 +314,8 @@ box(bty = "l")
 
 title(ylab = "Likelihood ratio R²", cex.lab = 1.25)
 axis(2, las = 2, line = 0)
+letters(x = 5, y = 95, "a)", cex = 1.5)
+
 
 #dev.off()
 ######
