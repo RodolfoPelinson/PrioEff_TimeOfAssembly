@@ -99,7 +99,7 @@ permutations <- shuffleSet(nrow(comm_all_late_colonization), control = control)
 
 #### Testing for quadratic effects of time
 
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 comm_all_late_colonization_mv <- mvabund(comm_all_late_colonization)
 
 mod_late_lin <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
@@ -112,9 +112,26 @@ anova_late_quadratic_test
 ```
 
 
+
+#### Testing for effect of time
+
+```{r, cache = TRUE}
+comm_all_late_colonization_mv <- mvabund(comm_all_late_colonization)
+
+mod_late_time <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+
+mod_late_no_time <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+
+anova_time_test <- anova(mod_late_no_time, mod_late_time, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+
+anova_time_test
+```
+
+
+
 #### Testing for the effect of blocks
 
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 
 mod_late_block <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
 
@@ -133,7 +150,7 @@ Do species trajectories differ in their intercept among the different treatments
 
 Do their trajectories (slopes) differ among the different treatments? 
 
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 
 mod_late_no_treatment <- manyglm(comm_all_late_colonization_mv ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
 
@@ -151,7 +168,7 @@ anova_late_treatments_test
 ##### Differences between late and others:
 
 Late VS Control
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 set.seed(3)
 control <- permute::how(within = permute::Within(type = 'free'),
                         plots = Plots(strata = Exp_design_all_late_colonization$sites[Exp_design_all_late_colonization$treatments != "fechado"], type = 'free'),
@@ -160,7 +177,7 @@ permutations <- shuffleSet(nrow(comm_all_late_colonization[Exp_design_all_late_c
 ```
 
 
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 mod_no_treatment_late_control <- manyglm(comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "fechado",] ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "fechado",], composition = FALSE)
 
 mod_treatment_late_control <- manyglm(comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "fechado",] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "fechado",], composition = FALSE)
@@ -174,7 +191,7 @@ anova_treatments_test_late_control
 
 
 Late VS Exclusion
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 set.seed(3)
 control <- permute::how(within = permute::Within(type = 'free'),
                         plots = Plots(strata = Exp_design_all_late_colonization$sites[Exp_design_all_late_colonization$treatments != "controle"], type = 'free'),
@@ -183,7 +200,7 @@ permutations <- shuffleSet(nrow(comm_all_late_colonization[Exp_design_all_late_c
 ```
 
 
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 mod_no_treatment_late_fechado <- manyglm(comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "controle",] ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "controle",], composition = FALSE)
 
 mod_treatment_late_fechado <- manyglm(comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "controle",] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "controle",], composition = FALSE)
@@ -193,6 +210,17 @@ mod_treatment_interaction_late_fechado <- manyglm(comm_all_late_colonization_mv[
 anova_treatments_test_late_fechado <- anova(mod_no_treatment_late_fechado, mod_treatment_late_fechado, mod_treatment_interaction_late_fechado, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 
 anova_treatments_test_late_fechado
+```
+
+
+Adjusting p values
+
+```{r}
+p_intercept <- c(control = anova_treatments_test_late_control$table$`Pr(>Dev)`[2], exclusion = anova_treatments_test_late_fechado$table$`Pr(>Dev)`[2])
+p.adjust(p_intercept, method = "fdr")
+
+p_slope <- c(control = anova_treatments_test_late_control$table$`Pr(>Dev)`[3], exclusion = anova_treatments_test_late_fechado$table$`Pr(>Dev)`[3])
+p.adjust(p_slope, method = "fdr")
 ```
 
 
@@ -244,7 +272,7 @@ comm_all_late_experiment <- remove_sp(comm_all_late_experiment, 2)
 
 
 Now create a permutation design
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 set.seed(1)
 control <- permute::how(within = permute::Within(type = 'free'),
                         plots = Plots(strata = Exp_design_all_late_experiment$sites, type = 'free'),
@@ -255,7 +283,7 @@ permutations <- shuffleSet(nrow(comm_all_late_experiment), control = control)
 
 #### Testing for quadratic effects of time
 
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 comm_all_late_experiment_mv <- mvabund(comm_all_late_experiment)
 
 mod_late_exp_lin <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
@@ -268,9 +296,26 @@ anova_late_exp_quadratic_test
 ```
 
 
+
+#### Testing for effect of time
+
+```{r, cache = TRUE}
+comm_all_late_experiment_mv <- mvabund(comm_all_late_experiment)
+
+mod_late_exp_time <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+
+mod_late_exp_no_time <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+
+anova_time_exp_test <- anova(mod_late_exp_no_time, mod_late_exp_time, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+
+anova_time_exp_test
+```
+
+
+
 #### Testing for the effect of blocks
 
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 
 mod_late_exp_block <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
 
@@ -289,7 +334,7 @@ Do species trajectories differ in their intercept among the different treatments
 
 Do their trajectories (slopes) differ among the different treatments? 
 
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 
 mod_late_exp_no_treatment <- manyglm(comm_all_late_experiment_mv ~ block2 + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
 
@@ -310,7 +355,7 @@ anova_late_exp_treatments_test
 
 Late VS Control
 Now create a permutation design
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 set.seed(1)
 control <- permute::how(within = permute::Within(type = 'free'),
                         plots = Plots(strata = Exp_design_all_late_experiment$sites[Exp_design_all_late_experiment$treatments != "fechado"], type = 'free'),
@@ -320,7 +365,7 @@ permutations <- shuffleSet(nrow(comm_all_late_experiment[Exp_design_all_late_exp
 
 
 
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 
 
 mod_no_treatment_late_exp_control <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado",] ~ block2 + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",], composition = FALSE)
@@ -337,7 +382,7 @@ anova_treatments_test_late_exp_control
 
 Late VS Exclusion
 Now create a permutation design
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 set.seed(1)
 control <- permute::how(within = permute::Within(type = 'free'),
                         plots = Plots(strata = Exp_design_all_late_experiment$sites[Exp_design_all_late_experiment$treatments != "controle"], type = 'free'),
@@ -347,7 +392,7 @@ permutations <- shuffleSet(nrow(comm_all_late_experiment[Exp_design_all_late_exp
 
 
 
-```{r, cache = FALSE}
+```{r, cache = TRUE}
 mod_no_treatment_late_exp_fechado <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle",] ~ block2 + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",], composition = FALSE)
 
 mod_treatment_late_exp_fechado <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle",] ~ block2 + treatments + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",], composition = FALSE)
@@ -358,6 +403,20 @@ anova_treatments_test_late_exp_fechado <- anova(mod_no_treatment_late_exp_fechad
 
 anova_treatments_test_late_exp_fechado
 ```
+
+
+
+
+Adjusting p values
+
+```{r}
+p_intercept <- c(control = anova_treatments_test_late_exp_control$table$`Pr(>Dev)`[2], exclusion = anova_treatments_test_late_exp_fechado$table$`Pr(>Dev)`[2])
+p.adjust(p_intercept, method = "fdr")
+
+p_slope <- c(control = anova_treatments_test_late_exp_control$table$`Pr(>Dev)`[3], exclusion = anova_treatments_test_late_exp_fechado$table$`Pr(>Dev)`[3])
+p.adjust(p_slope, method = "fdr")
+```
+
 
 
 
@@ -695,7 +754,7 @@ title(ylab = "nMDS 2", line = 2.5, cex.lab = 1.2)
 par(new = TRUE)
 plot(NA, xlim = c(0, 100), ylim = c(0, 100), xlab = "", ylab = "", xaxt = "n", yaxt = "n", bty = "n")
 
-legend(x = 100, y = 100, xjust = 1, yjust = 1, lty = c(1,1,1), lwd = 3, legend = c("Control", "Closed", "Late"), col = c( "#56B4E9", "#009E73","#D55E00"), bty = "n")
+legend(x = 100, y = 100, xjust = 1, yjust = 1, lty = c(1,1,1), lwd = 3, legend = c("Control", "Exclusion", "Late"), col = c( "#56B4E9", "#009E73","#D55E00"), bty = "n")
 
 #dev.off()
 
@@ -817,7 +876,7 @@ screen(15)
 par(mar = c(0.1,0.1,0.1,0.1), bty = "n")
 plot(NA, xlim = c(0, 100), ylim = c(0, 100), xaxt = "n", yaxt = "n", xlab = "", ylab = "")
 legend(legend = c("Control",
-                 "Closed",
+                 "Exclusion",
                   "Late"), x = 50, y = 50, bty = "n", lty = 1, lwd = 3, col = c("#56B4E9", "#009E73","#D55E00"), xjust = 0.5, yjust = 0.5)
 
   
