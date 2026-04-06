@@ -133,9 +133,9 @@ anova_time_test
 
 ```{r, cache = TRUE}
 
-mod_late_block <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+mod_late_block <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
 
-mod_late_no_block <- manyglm(comm_all_late_colonization_mv ~ treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+mod_late_no_block <- manyglm(comm_all_late_colonization_mv ~ treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
 
 anova_late_block_test <- anova(mod_late_no_block, mod_late_block, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 
@@ -258,7 +258,7 @@ Exp_design_all_late_experiment$AM_days_sc <- c(scale(Exp_design_all_late_experim
 Exp_design_all_late_experiment$AM_days_sc_squared <- Exp_design_all_late_experiment$AM_days_sc^2
 ```
 
-We will have to remove the last survey to achieve a balanced design, otherwise the permutation won't work.
+We will have to remove the first survey to achieve a balanced design, otherwise the permutation won't work.
 ```{r}
 comm_all_late_experiment <- comm_all_late_experiment[Exp_design_all_late_experiment$AM_days != 32,]
 
@@ -317,9 +317,9 @@ anova_time_exp_test
 
 ```{r, cache = TRUE}
 
-mod_late_exp_block <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_late_exp_block <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
 
-mod_late_exp_no_block <- manyglm(comm_all_late_experiment_mv ~ treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_late_exp_no_block <- manyglm(comm_all_late_experiment_mv ~ treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
 
 anova_late_exp_test <- anova(mod_late_exp_block, mod_late_exp_no_block, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 
@@ -336,11 +336,11 @@ Do their trajectories (slopes) differ among the different treatments?
 
 ```{r, cache = TRUE}
 
-mod_late_exp_no_treatment <- manyglm(comm_all_late_experiment_mv ~ block2 + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_late_exp_no_treatment <- manyglm(comm_all_late_experiment_mv ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
 
-mod_late_exp_treatment <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_late_exp_treatment <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
 
-mod_late_exp_treatment_interaction <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_late_exp_treatment_interaction <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
 
 anova_late_exp_treatments_test <- anova(mod_late_exp_no_treatment, mod_late_exp_treatment, mod_late_exp_treatment_interaction, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 
