@@ -30,7 +30,7 @@ library(colorspace)
 source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
 ```
 
-### Using number of days since the beggining of colonization
+# Using number of days since the beggining of colonization
 
 First lets drop the last survey, and the single exclusions of dragonfly
 and amphibians
@@ -70,74 +70,39 @@ comm_all_late_colonization <- comm_all_late[Exp_design_all_late$AM_days != 158,]
 
 Exp_design_all_late_colonization <- Exp_design_all_late[Exp_design_all_late$AM_days != 158,]
 
-comm_all_late_colonization <- remove_sp(comm_all_late_colonization, 2)
+#comm_all_late_colonization <- remove_sp(comm_all_late_colonization, 2)
 ```
+
+## Late VS Control
 
 Now create a permutation design
 
 ``` r
 set.seed(3)
-control <- permute::how(within = permute::Within(type = 'free'),
-                        plots = Plots(strata = Exp_design_all_late_colonization$sites, type = 'free'),
+
+comm_all_late_colonization_control <- comm_all_late_colonization[Exp_design_all_late_colonization$treatments != "fechado",]
+Exp_design_all_late_colonization_control <- Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "fechado",]
+
+comm_all_late_colonization_control <- remove_sp(comm_all_late_colonization_control, 1)
+
+
+
+set.seed(1); control <- permute::how(within = permute::Within(type = 'free'),
+                        plots = Plots(strata = Exp_design_all_late_colonization_control$sites, type = 'free'),
                         nperm = 999)
-permutations <- shuffleSet(nrow(comm_all_late_colonization), control = control)
+set.seed(1); permutations <- shuffleSet(nrow(comm_all_late_colonization_control), control = control)
 ```
 
-#### Testing for quadratic effects of time
+### Testing for quadratic effects of time
 
 ``` r
-comm_all_late_colonization_mv <- mvabund(comm_all_late_colonization)
+comm_all_late_colonization_control_mv <- mvabund(comm_all_late_colonization_control)
 
-mod_late_lin <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+mod_late_colonization_lin_control <- manyglm(comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization_control, composition = FALSE)
 
-mod_late_quad <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+mod_late_colonization_quad_control <- manyglm(comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization_control, composition = FALSE)
 
-anova_late_quadratic_test <- anova(mod_late_lin, mod_late_quad, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
-```
-
-    ## Using <int> bootID matrix from input. 
-    ## Resampling begins for test 1.
-    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.07 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.09 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.11 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.13 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.15 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.17 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.19 minutes...
-    ## Time elapsed: 0 hr 0 min 12 sec
-
-``` r
-anova_late_quadratic_test
-```
-
-    ## Analysis of Deviance Table
-    ## 
-    ## mod_late_lin: comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments
-    ## mod_late_quad: comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments
-    ## 
-    ## Multivariate test:
-    ##               Res.Df Df.diff   Dev Pr(>Dev)   
-    ## mod_late_lin      46                          
-    ## mod_late_quad     43       3 68.29    0.004 **
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## Arguments:
-    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
-    ##  P-value calculated using 999 iterations via PIT-trap resampling.
-
-#### Testing for effect of time
-
-``` r
-comm_all_late_colonization_mv <- mvabund(comm_all_late_colonization)
-
-mod_late_time <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
-
-mod_late_no_time <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
-
-anova_time_test <- anova(mod_late_no_time, mod_late_time, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_late_colonization_quadratic_test_control <- anova(mod_late_colonization_lin_control, mod_late_colonization_quad_control, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 ```
 
     ## Using <int> bootID matrix from input. 
@@ -155,32 +120,32 @@ anova_time_test <- anova(mod_late_no_time, mod_late_time, bootID = permutations,
     ## Time elapsed: 0 hr 0 min 13 sec
 
 ``` r
-anova_time_test
+anova_late_colonization_quadratic_test_control
 ```
 
     ## Analysis of Deviance Table
     ## 
-    ## mod_late_no_time: comm_all_late_colonization_mv ~ block2 + treatments
-    ## mod_late_time: comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared
+    ## mod_late_colonization_lin_control: comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments
+    ## mod_late_colonization_quad_control: comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments
     ## 
     ## Multivariate test:
-    ##                  Res.Df Df.diff   Dev Pr(>Dev)    
-    ## mod_late_no_time     49                           
-    ## mod_late_time        47       2 111.6    0.001 ***
+    ##                                    Res.Df Df.diff  Dev Pr(>Dev)  
+    ## mod_late_colonization_lin_control      30                        
+    ## mod_late_colonization_quad_control     28       2 36.9    0.042 *
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## Arguments:
     ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
-#### Testing for the effect of blocks
+### Testing for effect of time
 
 ``` r
-mod_late_block <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+mod_late_colonization_time_control <- manyglm(comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization_control, composition = FALSE)
 
-mod_late_no_block <- manyglm(comm_all_late_colonization_mv ~ treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+mod_late_colonization_no_time_control <- manyglm(comm_all_late_colonization_control_mv ~ block2 + treatments, family="negative.binomial",  data = Exp_design_all_late_colonization_control, composition = FALSE)
 
-anova_late_block_test <- anova(mod_late_no_block, mod_late_block, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_late_colonization_time_test_control <- anova(mod_late_colonization_no_time_control, mod_late_colonization_time_control, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 ```
 
     ## Using <int> bootID matrix from input. 
@@ -190,31 +155,74 @@ anova_late_block_test <- anova(mod_late_no_block, mod_late_block, bootID = permu
     ##  Resampling run 200 finished. Time elapsed: 0.05 minutes...
     ##  Resampling run 300 finished. Time elapsed: 0.07 minutes...
     ##  Resampling run 400 finished. Time elapsed: 0.09 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.11 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.12 minutes...
     ##  Resampling run 600 finished. Time elapsed: 0.14 minutes...
     ##  Resampling run 700 finished. Time elapsed: 0.16 minutes...
     ##  Resampling run 800 finished. Time elapsed: 0.18 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.21 minutes...
-    ## Time elapsed: 0 hr 0 min 13 sec
+    ##  Resampling run 900 finished. Time elapsed: 0.20 minutes...
+    ## Time elapsed: 0 hr 0 min 12 sec
 
 ``` r
-anova_late_block_test
+anova_late_colonization_time_test_control
 ```
 
     ## Analysis of Deviance Table
     ## 
-    ## mod_late_no_block: comm_all_late_colonization_mv ~ treatments + AM_days_sc + AM_days_sc_squared
-    ## mod_late_block: comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared
+    ## mod_late_colonization_no_time_control: comm_all_late_colonization_control_mv ~ block2 + treatments
+    ## mod_late_colonization_time_control: comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared
     ## 
     ## Multivariate test:
-    ##                   Res.Df Df.diff   Dev Pr(>Dev)
-    ## mod_late_no_block     49                       
-    ## mod_late_block        47       2 48.66    0.146
+    ##                                       Res.Df Df.diff   Dev Pr(>Dev)    
+    ## mod_late_colonization_no_time_control     32                           
+    ## mod_late_colonization_time_control        30       2 79.96    0.001 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## Arguments:
     ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
-#### Testing for effects of treatments
+### Testing for the effect of blocks
+
+``` r
+mod_late_colonization_block_control <- manyglm(comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization_control, composition = FALSE)
+
+mod_late_colonization_no_block_control <- manyglm(comm_all_late_colonization_control_mv ~ treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization_control, composition = FALSE)
+
+anova_late_colonization_block_test_control <- anova(mod_late_colonization_no_block_control, mod_late_colonization_block_control, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+```
+
+    ## Using <int> bootID matrix from input. 
+    ## Resampling begins for test 1.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.05 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.08 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.14 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.17 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.20 minutes...
+    ## Time elapsed: 0 hr 0 min 13 sec
+
+``` r
+anova_late_colonization_block_test_control
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## mod_late_colonization_no_block_control: comm_all_late_colonization_control_mv ~ treatments + AM_days_sc + AM_days_sc_squared
+    ## mod_late_colonization_block_control: comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared
+    ## 
+    ## Multivariate test:
+    ##                                        Res.Df Df.diff   Dev Pr(>Dev)
+    ## mod_late_colonization_no_block_control     32                       
+    ## mod_late_colonization_block_control        30       2 41.81    0.488
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+### Testing for effects of treatments
 
 Do species trajectories differ in their intercept among the different
 treatments?
@@ -222,214 +230,281 @@ treatments?
 Do their trajectories (slopes) differ among the different treatments?
 
 ``` r
-mod_late_no_treatment <- manyglm(comm_all_late_colonization_mv ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+mod_no_treatment_late_colonization_control <- manyglm(comm_all_late_colonization_control_mv ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization_control, composition = FALSE)
 
-mod_late_treatment <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+mod_treatment_late_colonization_control <- manyglm(comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization_control, composition = FALSE)
 
-mod_late_treatment_interaction <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+mod_treatment_interaction_late_colonization_control <- manyglm(comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization_control, composition = FALSE)
 
-anova_late_treatments_test <- anova(mod_late_no_treatment, mod_late_treatment, mod_late_treatment_interaction, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_treatments_test_late_colonization_control <- anova(mod_no_treatment_late_colonization_control, mod_treatment_late_colonization_control, mod_treatment_interaction_late_colonization_control, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 ```
 
     ## Using <int> bootID matrix from input. 
     ## Resampling begins for test 1.
     ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.04 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.08 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.13 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.17 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.22 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.26 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.30 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.35 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.39 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.08 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.14 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.17 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.19 minutes...
     ## Resampling begins for test 2.
-    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.05 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.10 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.16 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.21 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.26 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.31 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.36 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.41 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.46 minutes...
-    ## Time elapsed: 0 hr 0 min 56 sec
-
-``` r
-anova_late_treatments_test
-```
-
-    ## Analysis of Deviance Table
-    ## 
-    ## mod_late_no_treatment: comm_all_late_colonization_mv ~ block2 + AM_days_sc + AM_days_sc_squared
-    ## mod_late_treatment: comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared
-    ## mod_late_treatment_interaction: comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments
-    ## 
-    ## Multivariate test:
-    ##                                Res.Df Df.diff   Dev Pr(>Dev)    
-    ## mod_late_no_treatment              49                           
-    ## mod_late_treatment                 47       2 67.49    0.004 ** 
-    ## mod_late_treatment_interaction     43       4 92.26    0.001 ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## Arguments:
-    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
-    ##  P-value calculated using 999 iterations via PIT-trap resampling.
-
-##### Differences between late and others:
-
-Late VS Control
-
-``` r
-set.seed(3)
-control <- permute::how(within = permute::Within(type = 'free'),
-                        plots = Plots(strata = Exp_design_all_late_colonization$sites[Exp_design_all_late_colonization$treatments != "fechado"], type = 'free'),
-                        nperm = 999)
-permutations <- shuffleSet(nrow(comm_all_late_colonization[Exp_design_all_late_colonization$treatments != "fechado",]), control = control)
-```
-
-``` r
-mod_no_treatment_late_control <- manyglm(comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "fechado",] ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "fechado",], composition = FALSE)
-
-mod_treatment_late_control <- manyglm(comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "fechado",] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "fechado",], composition = FALSE)
-
-mod_treatment_interaction_late_control <- manyglm(comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "fechado",] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "fechado",], composition = FALSE)
-
-anova_treatments_test_late_control <- anova(mod_no_treatment_late_control, mod_treatment_late_control, mod_treatment_interaction_late_control, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
-```
-
-    ## Using <int> bootID matrix from input. 
-    ## Resampling begins for test 1.
     ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
     ##  Resampling run 100 finished. Time elapsed: 0.03 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.06 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.09 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.12 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.14 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.17 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.20 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.23 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.26 minutes...
-    ## Resampling begins for test 2.
-    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.04 minutes...
     ##  Resampling run 200 finished. Time elapsed: 0.07 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.11 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.14 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.18 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.22 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.25 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.29 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.33 minutes...
-    ## Time elapsed: 0 hr 0 min 39 sec
-
-``` r
-anova_treatments_test_late_control
-```
-
-    ## Analysis of Deviance Table
-    ## 
-    ## mod_no_treatment_late_control: comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "fechado", ] ~ block2 + AM_days_sc + AM_days_sc_squared
-    ## mod_treatment_late_control: comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "fechado", ] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared
-    ## mod_treatment_interaction_late_control: comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "fechado", ] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments
-    ## 
-    ## Multivariate test:
-    ##                                        Res.Df Df.diff   Dev Pr(>Dev)    
-    ## mod_no_treatment_late_control              31                           
-    ## mod_treatment_late_control                 30       1 47.61    0.004 ** 
-    ## mod_treatment_interaction_late_control     28       2 51.76    0.001 ***
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## Arguments:
-    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
-    ##  P-value calculated using 999 iterations via PIT-trap resampling.
-
-Late VS Exclusion
-
-``` r
-set.seed(3)
-control <- permute::how(within = permute::Within(type = 'free'),
-                        plots = Plots(strata = Exp_design_all_late_colonization$sites[Exp_design_all_late_colonization$treatments != "controle"], type = 'free'),
-                        nperm = 999)
-permutations <- shuffleSet(nrow(comm_all_late_colonization[Exp_design_all_late_colonization$treatments != "controle",]), control = control)
-```
-
-``` r
-mod_no_treatment_late_fechado <- manyglm(comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "controle",] ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "controle",], composition = FALSE)
-
-mod_treatment_late_fechado <- manyglm(comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "controle",] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "controle",], composition = FALSE)
-
-mod_treatment_interaction_late_fechado <- manyglm(comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "controle",] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "controle",], composition = FALSE)
-
-anova_treatments_test_late_fechado <- anova(mod_no_treatment_late_fechado, mod_treatment_late_fechado, mod_treatment_interaction_late_fechado, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
-```
-
-    ## Using <int> bootID matrix from input. 
-    ## Resampling begins for test 1.
-    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.03 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.06 minutes...
     ##  Resampling run 300 finished. Time elapsed: 0.09 minutes...
     ##  Resampling run 400 finished. Time elapsed: 0.12 minutes...
     ##  Resampling run 500 finished. Time elapsed: 0.15 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.18 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.20 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.23 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.25 minutes...
-    ## Resampling begins for test 2.
-    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.03 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.09 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.12 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.16 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.19 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.22 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.25 minutes...
-    ## Time elapsed: 0 hr 0 min 33 sec
+    ##  Resampling run 600 finished. Time elapsed: 0.17 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.21 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.24 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.27 minutes...
+    ## Time elapsed: 0 hr 0 min 30 sec
 
 ``` r
-anova_treatments_test_late_fechado
+anova_treatments_test_late_colonization_control
 ```
 
     ## Analysis of Deviance Table
     ## 
-    ## mod_no_treatment_late_fechado: comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "controle", ] ~ block2 + AM_days_sc + AM_days_sc_squared
-    ## mod_treatment_late_fechado: comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "controle", ] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared
-    ## mod_treatment_interaction_late_fechado: comm_all_late_colonization_mv[Exp_design_all_late_colonization$treatments != "controle", ] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments
+    ## mod_no_treatment_late_colonization_control: comm_all_late_colonization_control_mv ~ block2 + AM_days_sc + AM_days_sc_squared
+    ## mod_treatment_late_colonization_control: comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared
+    ## mod_treatment_interaction_late_colonization_control: comm_all_late_colonization_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments
     ## 
     ## Multivariate test:
-    ##                                        Res.Df Df.diff   Dev Pr(>Dev)    
-    ## mod_no_treatment_late_fechado              31                           
-    ## mod_treatment_late_fechado                 30       1 18.07    0.185    
-    ## mod_treatment_interaction_late_fechado     28       2 59.36    0.001 ***
+    ##                                                     Res.Df Df.diff   Dev
+    ## mod_no_treatment_late_colonization_control              31              
+    ## mod_treatment_late_colonization_control                 30       1 47.98
+    ## mod_treatment_interaction_late_colonization_control     28       2 51.76
+    ##                                                     Pr(>Dev)    
+    ## mod_no_treatment_late_colonization_control                      
+    ## mod_treatment_late_colonization_control                0.002 ** 
+    ## mod_treatment_interaction_late_colonization_control    0.001 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## Arguments:
     ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
-Adjusting p values
+## Late VS Exclusion
+
+Now create a permutation design
 
 ``` r
-p_intercept <- c(control = anova_treatments_test_late_control$table$`Pr(>Dev)`[2], exclusion = anova_treatments_test_late_fechado$table$`Pr(>Dev)`[2])
-p.adjust(p_intercept, method = "fdr")
+set.seed(3)
+
+comm_all_late_colonization_exclusion <- comm_all_late_colonization[Exp_design_all_late_colonization$treatments != "controle",]
+Exp_design_all_late_colonization_exclusion <- Exp_design_all_late_colonization[Exp_design_all_late_colonization$treatments != "controle",]
+
+comm_all_late_colonization_exclusion <- remove_sp(comm_all_late_colonization_exclusion, 1)
+
+
+set.seed(1); control <- permute::how(within = permute::Within(type = 'free'),
+                        plots = Plots(strata = Exp_design_all_late_colonization_exclusion$sites, type = 'free'),
+                        nperm = 999)
+set.seed(1); permutations <- shuffleSet(nrow(comm_all_late_colonization_exclusion), control = control)
 ```
 
-    ##   control exclusion 
-    ##     0.008     0.185
+### Testing for quadratic effects of time
 
 ``` r
-p_slope <- c(control = anova_treatments_test_late_control$table$`Pr(>Dev)`[3], exclusion = anova_treatments_test_late_fechado$table$`Pr(>Dev)`[3])
-p.adjust(p_slope, method = "fdr")
+comm_all_late_colonization_exclusion_mv <- mvabund(comm_all_late_colonization_exclusion)
+
+mod_late_colonization_lin_exclusion <- manyglm(comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization_exclusion, composition = FALSE)
+
+mod_late_colonization_quad_exclusion <- manyglm(comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization_exclusion, composition = FALSE)
+
+anova_late_colonization_quadratic_test_exclusion <- anova(mod_late_colonization_lin_exclusion, mod_late_colonization_quad_exclusion, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 ```
 
-    ##   control exclusion 
-    ##     0.001     0.001
+    ## Using <int> bootID matrix from input. 
+    ## Resampling begins for test 1.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.09 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.14 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.16 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.18 minutes...
+    ## Time elapsed: 0 hr 0 min 12 sec
 
-### Using number of days since the beggining of the experiment
+``` r
+anova_late_colonization_quadratic_test_exclusion
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## mod_late_colonization_lin_exclusion: comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments
+    ## mod_late_colonization_quad_exclusion: comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments
+    ## 
+    ## Multivariate test:
+    ##                                      Res.Df Df.diff  Dev Pr(>Dev)   
+    ## mod_late_colonization_lin_exclusion      30                         
+    ## mod_late_colonization_quad_exclusion     28       2 48.9    0.007 **
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+### Testing for effect of time
+
+``` r
+mod_late_colonization_time_exclusion <- manyglm(comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization_exclusion, composition = FALSE)
+
+mod_late_colonization_no_time_exclusion <- manyglm(comm_all_late_colonization_exclusion_mv ~ block2 + treatments, family="negative.binomial",  data = Exp_design_all_late_colonization_exclusion, composition = FALSE)
+
+anova_late_colonization_time_test_exclusion <- anova(mod_late_colonization_no_time_exclusion, mod_late_colonization_time_exclusion, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+```
+
+    ## Using <int> bootID matrix from input. 
+    ## Resampling begins for test 1.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.08 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.14 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.16 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.18 minutes...
+    ## Time elapsed: 0 hr 0 min 11 sec
+
+``` r
+anova_late_colonization_time_test_exclusion
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## mod_late_colonization_no_time_exclusion: comm_all_late_colonization_exclusion_mv ~ block2 + treatments
+    ## mod_late_colonization_time_exclusion: comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared
+    ## 
+    ## Multivariate test:
+    ##                                         Res.Df Df.diff  Dev Pr(>Dev)    
+    ## mod_late_colonization_no_time_exclusion     32                          
+    ## mod_late_colonization_time_exclusion        30       2 81.9    0.001 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+### Testing for the effect of blocks
+
+``` r
+mod_late_colonization_block_exclusion <- manyglm(comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization_exclusion, composition = FALSE)
+
+mod_late_colonization_no_block_exclusion <- manyglm(comm_all_late_colonization_exclusion_mv ~ treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization_exclusion, composition = FALSE)
+
+anova_late_colonization_block_test_exclusion <- anova(mod_late_colonization_no_block_exclusion, mod_late_colonization_block_exclusion, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+```
+
+    ## Using <int> bootID matrix from input. 
+    ## Resampling begins for test 1.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.03 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.05 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.08 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.14 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.16 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.19 minutes...
+    ## Time elapsed: 0 hr 0 min 12 sec
+
+``` r
+anova_late_colonization_block_test_exclusion
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## mod_late_colonization_no_block_exclusion: comm_all_late_colonization_exclusion_mv ~ treatments + AM_days_sc + AM_days_sc_squared
+    ## mod_late_colonization_block_exclusion: comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared
+    ## 
+    ## Multivariate test:
+    ##                                          Res.Df Df.diff   Dev Pr(>Dev)
+    ## mod_late_colonization_no_block_exclusion     32                       
+    ## mod_late_colonization_block_exclusion        30       2 23.01    0.948
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+### Testing for effects of treatments
+
+Do species trajectories differ in their intercept among the different
+treatments?
+
+Do their trajectories (slopes) differ among the different treatments?
+
+``` r
+mod_no_treatment_late_colonization_exclusion <- manyglm(comm_all_late_colonization_exclusion_mv ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization_exclusion, composition = FALSE)
+
+mod_treatment_late_colonization_exclusion <- manyglm(comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_colonization_exclusion, composition = FALSE)
+
+mod_treatment_interaction_late_colonization_exclusion <- manyglm(comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization_exclusion, composition = FALSE)
+
+anova_treatments_test_late_colonization_exclusion <- anova(mod_no_treatment_late_colonization_exclusion, mod_treatment_late_colonization_exclusion, mod_treatment_interaction_late_colonization_exclusion, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+```
+
+    ## Using <int> bootID matrix from input. 
+    ## Resampling begins for test 1.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.05 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.09 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.11 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.13 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.15 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.18 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.20 minutes...
+    ## Resampling begins for test 2.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.03 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.05 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.08 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.15 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.17 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.20 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.22 minutes...
+    ## Time elapsed: 0 hr 0 min 28 sec
+
+``` r
+anova_treatments_test_late_colonization_exclusion
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## mod_no_treatment_late_colonization_exclusion: comm_all_late_colonization_exclusion_mv ~ block2 + AM_days_sc + AM_days_sc_squared
+    ## mod_treatment_late_colonization_exclusion: comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared
+    ## mod_treatment_interaction_late_colonization_exclusion: comm_all_late_colonization_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments
+    ## 
+    ## Multivariate test:
+    ##                                                       Res.Df Df.diff   Dev
+    ## mod_no_treatment_late_colonization_exclusion              31              
+    ## mod_treatment_late_colonization_exclusion                 30       1 18.45
+    ## mod_treatment_interaction_late_colonization_exclusion     28       2 59.36
+    ##                                                       Pr(>Dev)    
+    ## mod_no_treatment_late_colonization_exclusion                      
+    ## mod_treatment_late_colonization_exclusion                0.209    
+    ## mod_treatment_interaction_late_colonization_exclusion    0.001 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+# Using number of days since the beggining of the experiment
 
 First lets drop the single exclusions of dragonfly and amphibians
 
@@ -471,71 +546,34 @@ Exp_design_all_late_experiment <- Exp_design_all_late_experiment[Exp_design_all_
 comm_all_late_experiment <- remove_sp(comm_all_late_experiment, 2)
 ```
 
+## Late VS Control
+
 Now create a permutation design
 
 ``` r
-set.seed(1)
-control <- permute::how(within = permute::Within(type = 'free'),
-                        plots = Plots(strata = Exp_design_all_late_experiment$sites, type = 'free'),
+comm_all_late_experiment_control <- comm_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",]
+Exp_design_all_late_experiment_control <- Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",]
+
+comm_all_late_experiment_control <- remove_sp(comm_all_late_experiment_control, 1)
+
+
+
+set.seed(1); control <- permute::how(within = permute::Within(type = 'free'),
+                        plots = Plots(strata = Exp_design_all_late_experiment_control$sites, type = 'free'),
                         nperm = 999)
-permutations <- shuffleSet(nrow(comm_all_late_experiment), control = control)
+set.seed(1); permutations <- shuffleSet(nrow(comm_all_late_experiment_control), control = control)
 ```
 
-#### Testing for quadratic effects of time
+### Testing for quadratic effects of time
 
 ``` r
-comm_all_late_experiment_mv <- mvabund(comm_all_late_experiment)
+comm_all_late_experiment_control_mv <- mvabund(comm_all_late_experiment_control)
 
-mod_late_exp_lin <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_late_experiment_lin_control <- manyglm(comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment_control, composition = FALSE)
 
-mod_late_exp_quad <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_late_experiment_quad_control <- manyglm(comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment_control, composition = FALSE)
 
-anova_late_exp_quadratic_test <- anova(mod_late_exp_lin, mod_late_exp_quad, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
-```
-
-    ## Using <int> bootID matrix from input. 
-    ## Resampling begins for test 1.
-    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.09 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.11 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.13 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.15 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.17 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.19 minutes...
-    ## Time elapsed: 0 hr 0 min 12 sec
-
-``` r
-anova_late_exp_quadratic_test
-```
-
-    ## Analysis of Deviance Table
-    ## 
-    ## mod_late_exp_lin: comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments
-    ## mod_late_exp_quad: comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments
-    ## 
-    ## Multivariate test:
-    ##                   Res.Df Df.diff   Dev Pr(>Dev)  
-    ## mod_late_exp_lin      46                         
-    ## mod_late_exp_quad     43       3 40.32    0.091 .
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## Arguments:
-    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
-    ##  P-value calculated using 999 iterations via PIT-trap resampling.
-
-#### Testing for effect of time
-
-``` r
-comm_all_late_experiment_mv <- mvabund(comm_all_late_experiment)
-
-mod_late_exp_time <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
-
-mod_late_exp_no_time <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
-
-anova_time_exp_test <- anova(mod_late_exp_no_time, mod_late_exp_time, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_late_experiment_quadratic_test_control <- anova(mod_late_experiment_lin_control, mod_late_experiment_quad_control, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 ```
 
     ## Using <int> bootID matrix from input. 
@@ -545,40 +583,303 @@ anova_time_exp_test <- anova(mod_late_exp_no_time, mod_late_exp_time, bootID = p
     ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
     ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
     ##  Resampling run 400 finished. Time elapsed: 0.08 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.09 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.11 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.13 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.15 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.17 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.14 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.16 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.18 minutes...
     ## Time elapsed: 0 hr 0 min 11 sec
 
 ``` r
-anova_time_exp_test
+anova_late_experiment_quadratic_test_control
 ```
 
     ## Analysis of Deviance Table
     ## 
-    ## mod_late_exp_no_time: comm_all_late_experiment_mv ~ block2 + treatments
-    ## mod_late_exp_time: comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc
+    ## mod_late_experiment_lin_control: comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments
+    ## mod_late_experiment_quad_control: comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments
     ## 
     ## Multivariate test:
-    ##                      Res.Df Df.diff   Dev Pr(>Dev)    
-    ## mod_late_exp_no_time     49                           
-    ## mod_late_exp_time        48       1 110.9    0.001 ***
+    ##                                  Res.Df Df.diff   Dev Pr(>Dev)
+    ## mod_late_experiment_lin_control      30                       
+    ## mod_late_experiment_quad_control     28       2 22.48    0.302
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+### Testing for effect of time
+
+``` r
+mod_late_experiment_time_control <- manyglm(comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc# + AM_days_sc_squared
+                                            , family="negative.binomial",  data = Exp_design_all_late_experiment_control, composition = FALSE)
+
+mod_late_experiment_no_time_control <- manyglm(comm_all_late_experiment_control_mv ~ block2 + treatments, family="negative.binomial",  data = Exp_design_all_late_experiment_control, composition = FALSE)
+
+anova_late_experiment_time_test_control <- anova(mod_late_experiment_no_time_control, mod_late_experiment_time_control, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+```
+
+    ## Using <int> bootID matrix from input. 
+    ## Resampling begins for test 1.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.07 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.09 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.11 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.13 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.15 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.16 minutes...
+    ## Time elapsed: 0 hr 0 min 11 sec
+
+``` r
+anova_late_experiment_time_test_control
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## mod_late_experiment_no_time_control: comm_all_late_experiment_control_mv ~ block2 + treatments
+    ## mod_late_experiment_time_control: comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc
+    ## 
+    ## Multivariate test:
+    ##                                     Res.Df Df.diff   Dev Pr(>Dev)    
+    ## mod_late_experiment_no_time_control     32                           
+    ## mod_late_experiment_time_control        31       1 77.62    0.001 ***
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## Arguments:
     ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
-#### Testing for the effect of blocks
+### Testing for the effect of blocks
 
 ``` r
-mod_late_exp_block <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_late_experiment_block_control <- manyglm(comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc# + AM_days_sc_squared
+                                             , family="negative.binomial",  data = Exp_design_all_late_experiment_control, composition = FALSE)
 
-mod_late_exp_no_block <- manyglm(comm_all_late_experiment_mv ~ treatments + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_late_experiment_no_block_control <- manyglm(comm_all_late_experiment_control_mv ~ treatments + AM_days_sc# + AM_days_sc_squared
+                                              , family="negative.binomial",  data = Exp_design_all_late_experiment_control, composition = FALSE)
 
-anova_late_exp_test <- anova(mod_late_exp_block, mod_late_exp_no_block, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_late_experiment_block_test_control <- anova(mod_late_experiment_no_block_control, mod_late_experiment_block_control, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+```
+
+    ## Using <int> bootID matrix from input. 
+    ## Resampling begins for test 1.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.05 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.07 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.08 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.14 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.15 minutes...
+    ## Time elapsed: 0 hr 0 min 10 sec
+
+``` r
+anova_late_experiment_block_test_control
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## mod_late_experiment_no_block_control: comm_all_late_experiment_control_mv ~ treatments + AM_days_sc
+    ## mod_late_experiment_block_control: comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc
+    ## 
+    ## Multivariate test:
+    ##                                      Res.Df Df.diff   Dev Pr(>Dev)
+    ## mod_late_experiment_no_block_control     33                       
+    ## mod_late_experiment_block_control        31       2 36.53    0.605
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+### Testing for effects of treatments
+
+Do species trajectories differ in their intercept among the different
+treatments?
+
+Do their trajectories (slopes) differ among the different treatments?
+
+``` r
+mod_no_treatment_late_experiment_control <- manyglm(comm_all_late_experiment_control_mv ~ block2 + AM_days_sc# + AM_days_sc_squared
+                                                    , family="negative.binomial",  data = Exp_design_all_late_experiment_control, composition = FALSE)
+
+mod_treatment_late_experiment_control <- manyglm(comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc# + AM_days_sc_squared
+                                                 , family="negative.binomial",  data = Exp_design_all_late_experiment_control, composition = FALSE)
+
+mod_treatment_interaction_late_experiment_control <- manyglm(comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments# + AM_days_sc_squared + AM_days_sc_squared:treatments
+                                                             , family="negative.binomial",  data = Exp_design_all_late_experiment_control, composition = FALSE)
+
+anova_treatments_test_late_experiment_control <- anova(mod_no_treatment_late_experiment_control, mod_treatment_late_experiment_control, mod_treatment_interaction_late_experiment_control, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+```
+
+    ## Using <int> bootID matrix from input. 
+    ## Resampling begins for test 1.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.07 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.09 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.11 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.13 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.14 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.16 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.18 minutes...
+    ## Resampling begins for test 2.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.03 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.05 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.07 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.09 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.11 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.14 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.15 minutes...
+    ## Time elapsed: 0 hr 0 min 21 sec
+
+``` r
+anova_treatments_test_late_experiment_control
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## mod_no_treatment_late_experiment_control: comm_all_late_experiment_control_mv ~ block2 + AM_days_sc
+    ## mod_treatment_late_experiment_control: comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc
+    ## mod_treatment_interaction_late_experiment_control: comm_all_late_experiment_control_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments
+    ## 
+    ## Multivariate test:
+    ##                                                   Res.Df Df.diff   Dev Pr(>Dev)
+    ## mod_no_treatment_late_experiment_control              32                       
+    ## mod_treatment_late_experiment_control                 31       1 30.31    0.101
+    ## mod_treatment_interaction_late_experiment_control     30       1 25.99    0.015
+    ##                                                    
+    ## mod_no_treatment_late_experiment_control           
+    ## mod_treatment_late_experiment_control              
+    ## mod_treatment_interaction_late_experiment_control *
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+## Late VS Exclusion
+
+Now create a permutation design
+
+``` r
+set.seed(3)
+
+comm_all_late_experiment_exclusion <- comm_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",]
+Exp_design_all_late_experiment_exclusion <- Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",]
+
+comm_all_late_experiment_exclusion <- remove_sp(comm_all_late_experiment_exclusion, 1)
+
+
+set.seed(1); control <- permute::how(within = permute::Within(type = 'free'),
+                        plots = Plots(strata = Exp_design_all_late_experiment_exclusion$sites, type = 'free'),
+                        nperm = 999)
+set.seed(1); permutations <- shuffleSet(nrow(comm_all_late_experiment_exclusion), control = control)
+```
+
+### Testing for quadratic effects of time
+
+``` r
+comm_all_late_experiment_exclusion_mv <- mvabund(comm_all_late_experiment_exclusion)
+
+mod_late_experiment_lin_exclusion <- manyglm(comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment_exclusion, composition = FALSE)
+
+mod_late_experiment_quad_exclusion <- manyglm(comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment_exclusion, composition = FALSE)
+
+anova_late_experiment_quadratic_test_exclusion <- anova(mod_late_experiment_lin_exclusion, mod_late_experiment_quad_exclusion, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+```
+
+    ## Using <int> bootID matrix from input. 
+    ## Resampling begins for test 1.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.08 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.14 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.16 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.18 minutes...
+    ## Time elapsed: 0 hr 0 min 12 sec
+
+``` r
+anova_late_experiment_quadratic_test_exclusion
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## mod_late_experiment_lin_exclusion: comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments
+    ## mod_late_experiment_quad_exclusion: comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments
+    ## 
+    ## Multivariate test:
+    ##                                    Res.Df Df.diff   Dev Pr(>Dev)
+    ## mod_late_experiment_lin_exclusion      30                       
+    ## mod_late_experiment_quad_exclusion     28       2 26.53    0.295
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+### Testing for effect of time
+
+``` r
+mod_late_experiment_time_exclusion <- manyglm(comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc# + AM_days_sc_squared
+                                              , family="negative.binomial",  data = Exp_design_all_late_experiment_exclusion, composition = FALSE)
+
+mod_late_experiment_no_time_exclusion <- manyglm(comm_all_late_experiment_exclusion_mv ~ block2 + treatments, family="negative.binomial",  data = Exp_design_all_late_experiment_exclusion, composition = FALSE)
+
+anova_late_experiment_time_test_exclusion <- anova(mod_late_experiment_no_time_exclusion, mod_late_experiment_time_exclusion, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+```
+
+    ## Using <int> bootID matrix from input. 
+    ## Resampling begins for test 1.
+    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.08 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.13 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.15 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.16 minutes...
+    ## Time elapsed: 0 hr 0 min 10 sec
+
+``` r
+anova_late_experiment_time_test_exclusion
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## mod_late_experiment_no_time_exclusion: comm_all_late_experiment_exclusion_mv ~ block2 + treatments
+    ## mod_late_experiment_time_exclusion: comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc
+    ## 
+    ## Multivariate test:
+    ##                                       Res.Df Df.diff   Dev Pr(>Dev)    
+    ## mod_late_experiment_no_time_exclusion     32                           
+    ## mod_late_experiment_time_exclusion        31       1 86.66    0.001 ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+### Testing for the effect of blocks
+
+``` r
+mod_late_experiment_block_exclusion <- manyglm(comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc# + AM_days_sc_squared
+                                               , family="negative.binomial",  data = Exp_design_all_late_experiment_exclusion, composition = FALSE)
+
+mod_late_experiment_no_block_exclusion <- manyglm(comm_all_late_experiment_exclusion_mv ~ treatments + AM_days_sc# + AM_days_sc_squared
+                                                  , family="negative.binomial",  data = Exp_design_all_late_experiment_exclusion, composition = FALSE)
+
+anova_late_experiment_block_test_exclusion <- anova(mod_late_experiment_no_block_exclusion, mod_late_experiment_block_exclusion, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 ```
 
     ## Using <int> bootID matrix from input. 
@@ -589,30 +890,30 @@ anova_late_exp_test <- anova(mod_late_exp_block, mod_late_exp_no_block, bootID =
     ##  Resampling run 300 finished. Time elapsed: 0.05 minutes...
     ##  Resampling run 400 finished. Time elapsed: 0.07 minutes...
     ##  Resampling run 500 finished. Time elapsed: 0.09 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.11 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.13 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.12 minutes...
     ##  Resampling run 800 finished. Time elapsed: 0.14 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.16 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.15 minutes...
     ## Time elapsed: 0 hr 0 min 10 sec
 
 ``` r
-anova_late_exp_test
+anova_late_experiment_block_test_exclusion
 ```
 
     ## Analysis of Deviance Table
     ## 
-    ## mod_late_exp_no_block: comm_all_late_experiment_mv ~ treatments + AM_days_sc
-    ## mod_late_exp_block: comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc
+    ## mod_late_experiment_no_block_exclusion: comm_all_late_experiment_exclusion_mv ~ treatments + AM_days_sc
+    ## mod_late_experiment_block_exclusion: comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc
     ## 
     ## Multivariate test:
-    ##                       Res.Df Df.diff   Dev Pr(>Dev)
-    ## mod_late_exp_no_block     50                       
-    ## mod_late_exp_block        48       2 40.25    0.271
+    ##                                        Res.Df Df.diff   Dev Pr(>Dev)
+    ## mod_late_experiment_no_block_exclusion     33                       
+    ## mod_late_experiment_block_exclusion        31       2 20.01    0.951
     ## Arguments:
     ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
-#### Testing for effects of treatments
+### Testing for effects of treatments
 
 Do species trajectories differ in their intercept among the different
 treatments?
@@ -620,13 +921,16 @@ treatments?
 Do their trajectories (slopes) differ among the different treatments?
 
 ``` r
-mod_late_exp_no_treatment <- manyglm(comm_all_late_experiment_mv ~ block2 + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_no_treatment_late_experiment_exclusion <- manyglm(comm_all_late_experiment_exclusion_mv ~ block2 + AM_days_sc# + AM_days_sc_squared
+                                                      , family="negative.binomial",  data = Exp_design_all_late_experiment_exclusion, composition = FALSE)
 
-mod_late_exp_treatment <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_treatment_late_experiment_exclusion <- manyglm(comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc# + AM_days_sc_squared
+                                                   , family="negative.binomial",  data = Exp_design_all_late_experiment_exclusion, composition = FALSE)
 
-mod_late_exp_treatment_interaction <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+mod_treatment_interaction_late_experiment_exclusion <- manyglm(comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments# + AM_days_sc_squared + AM_days_sc_squared:treatments
+                                                               , family="negative.binomial",  data = Exp_design_all_late_experiment_exclusion, composition = FALSE)
 
-anova_late_exp_treatments_test <- anova(mod_late_exp_no_treatment, mod_late_exp_treatment, mod_late_exp_treatment_interaction, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_treatments_test_late_experiment_exclusion <- anova(mod_no_treatment_late_experiment_exclusion, mod_treatment_late_experiment_exclusion, mod_treatment_interaction_late_experiment_exclusion, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 ```
 
     ## Using <int> bootID matrix from input. 
@@ -635,199 +939,51 @@ anova_late_exp_treatments_test <- anova(mod_late_exp_no_treatment, mod_late_exp_
     ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
     ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
     ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.09 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.11 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.13 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.15 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.17 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.19 minutes...
-    ## Resampling begins for test 2.
-    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.07 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.09 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.08 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.10 minutes...
     ##  Resampling run 600 finished. Time elapsed: 0.11 minutes...
     ##  Resampling run 700 finished. Time elapsed: 0.13 minutes...
     ##  Resampling run 800 finished. Time elapsed: 0.15 minutes...
     ##  Resampling run 900 finished. Time elapsed: 0.17 minutes...
-    ## Time elapsed: 0 hr 0 min 23 sec
-
-``` r
-anova_late_exp_treatments_test
-```
-
-    ## Analysis of Deviance Table
-    ## 
-    ## mod_late_exp_no_treatment: comm_all_late_experiment_mv ~ block2 + AM_days_sc
-    ## mod_late_exp_treatment: comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc
-    ## mod_late_exp_treatment_interaction: comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments
-    ## 
-    ## Multivariate test:
-    ##                                    Res.Df Df.diff   Dev Pr(>Dev)   
-    ## mod_late_exp_no_treatment              50                          
-    ## mod_late_exp_treatment                 48       2 63.00    0.016 * 
-    ## mod_late_exp_treatment_interaction     46       2 48.32    0.006 **
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## Arguments:
-    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
-    ##  P-value calculated using 999 iterations via PIT-trap resampling.
-
-##### Differences between late and others:
-
-Late VS Control Now create a permutation design
-
-``` r
-set.seed(1)
-control <- permute::how(within = permute::Within(type = 'free'),
-                        plots = Plots(strata = Exp_design_all_late_experiment$sites[Exp_design_all_late_experiment$treatments != "fechado"], type = 'free'),
-                        nperm = 999)
-permutations <- shuffleSet(nrow(comm_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",]), control = control)
-```
-
-``` r
-mod_no_treatment_late_exp_control <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado",] ~ block2 + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",], composition = FALSE)
-
-mod_treatment_late_exp_control <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado",] ~ block2 + treatments + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",], composition = FALSE)
-
-mod_treatment_interaction_late_exp_control <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado",] ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",], composition = FALSE)
-
-anova_treatments_test_late_exp_control <- anova(mod_no_treatment_late_exp_control, mod_treatment_late_exp_control, mod_treatment_interaction_late_exp_control, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
-```
-
-    ## Using <int> bootID matrix from input. 
-    ## Resampling begins for test 1.
-    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.01 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.03 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.04 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.06 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.07 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.08 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.10 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.11 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.13 minutes...
     ## Resampling begins for test 2.
     ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.01 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.03 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.04 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.05 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.06 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.08 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.09 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.10 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.11 minutes...
-    ## Time elapsed: 0 hr 0 min 16 sec
+    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.08 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.12 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.13 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.15 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.16 minutes...
+    ## Time elapsed: 0 hr 0 min 22 sec
 
 ``` r
-anova_treatments_test_late_exp_control
+anova_treatments_test_late_experiment_exclusion
 ```
 
     ## Analysis of Deviance Table
     ## 
-    ## mod_no_treatment_late_exp_control: comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado", ] ~ block2 + AM_days_sc
-    ## mod_treatment_late_exp_control: comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado", ] ~ block2 + treatments + AM_days_sc
-    ## mod_treatment_interaction_late_exp_control: comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado", ] ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments
+    ## mod_no_treatment_late_experiment_exclusion: comm_all_late_experiment_exclusion_mv ~ block2 + AM_days_sc
+    ## mod_treatment_late_experiment_exclusion: comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc
+    ## mod_treatment_interaction_late_experiment_exclusion: comm_all_late_experiment_exclusion_mv ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments
     ## 
     ## Multivariate test:
-    ##                                            Res.Df Df.diff   Dev Pr(>Dev)  
-    ## mod_no_treatment_late_exp_control              32                         
-    ## mod_treatment_late_exp_control                 31       1 30.31    0.101  
-    ## mod_treatment_interaction_late_exp_control     30       1 25.99    0.015 *
+    ##                                                     Res.Df Df.diff   Dev
+    ## mod_no_treatment_late_experiment_exclusion              32              
+    ## mod_treatment_late_experiment_exclusion                 31       1 32.65
+    ## mod_treatment_interaction_late_experiment_exclusion     30       1 19.18
+    ##                                                     Pr(>Dev)  
+    ## mod_no_treatment_late_experiment_exclusion                    
+    ## mod_treatment_late_experiment_exclusion                0.029 *
+    ## mod_treatment_interaction_late_experiment_exclusion    0.181  
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## Arguments:
     ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
-Late VS Exclusion Now create a permutation design
-
-``` r
-set.seed(1)
-control <- permute::how(within = permute::Within(type = 'free'),
-                        plots = Plots(strata = Exp_design_all_late_experiment$sites[Exp_design_all_late_experiment$treatments != "controle"], type = 'free'),
-                        nperm = 999)
-permutations <- shuffleSet(nrow(comm_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",]), control = control)
-```
-
-``` r
-mod_no_treatment_late_exp_fechado <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle",] ~ block2 + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",], composition = FALSE)
-
-mod_treatment_late_exp_fechado <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle",] ~ block2 + treatments + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",], composition = FALSE)
-
-mod_treatment_interaction_late_exp_fechado <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle",] ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",], composition = FALSE)
-
-anova_treatments_test_late_exp_fechado <- anova(mod_no_treatment_late_exp_fechado, mod_treatment_late_exp_fechado, mod_treatment_interaction_late_exp_fechado, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
-```
-
-    ## Using <int> bootID matrix from input. 
-    ## Resampling begins for test 1.
-    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.01 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.03 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.04 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.05 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.07 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.08 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.10 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.11 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.12 minutes...
-    ## Resampling begins for test 2.
-    ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.01 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.02 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.04 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.05 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.06 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.07 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.09 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.10 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.11 minutes...
-    ## Time elapsed: 0 hr 0 min 15 sec
-
-``` r
-anova_treatments_test_late_exp_fechado
-```
-
-    ## Analysis of Deviance Table
-    ## 
-    ## mod_no_treatment_late_exp_fechado: comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle", ] ~ block2 + AM_days_sc
-    ## mod_treatment_late_exp_fechado: comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle", ] ~ block2 + treatments + AM_days_sc
-    ## mod_treatment_interaction_late_exp_fechado: comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle", ] ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments
-    ## 
-    ## Multivariate test:
-    ##                                            Res.Df Df.diff   Dev Pr(>Dev)  
-    ## mod_no_treatment_late_exp_fechado              32                         
-    ## mod_treatment_late_exp_fechado                 31       1 32.65    0.029 *
-    ## mod_treatment_interaction_late_exp_fechado     30       1 19.18    0.181  
-    ## ---
-    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
-    ## Arguments:
-    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
-    ##  P-value calculated using 999 iterations via PIT-trap resampling.
-
-Adjusting p values
-
-``` r
-p_intercept <- c(control = anova_treatments_test_late_exp_control$table$`Pr(>Dev)`[2], exclusion = anova_treatments_test_late_exp_fechado$table$`Pr(>Dev)`[2])
-p.adjust(p_intercept, method = "fdr")
-```
-
-    ##   control exclusion 
-    ##     0.101     0.058
-
-``` r
-p_slope <- c(control = anova_treatments_test_late_exp_control$table$`Pr(>Dev)`[3], exclusion = anova_treatments_test_late_exp_fechado$table$`Pr(>Dev)`[3])
-p.adjust(p_slope, method = "fdr")
-```
-
-    ##   control exclusion 
-    ##     0.030     0.181
-
-## Making predictions with one big model
+# Making predictions with one big model
 
 ``` r
 comm_all_late <- comm_all[Exp_design_all$treatments != "fechado_dia" & Exp_design_all$treatments != "fechado_noite",]
@@ -1031,7 +1187,7 @@ species_late <- nmds_predicted_late_com$species
 
 ## Plotting
 
-#### Whole community
+### Whole community
 
 ``` r
 #svg(filename = "Plots/Late_analysis/late_treatment.svg", width = 5, height = 4.5, pointsize = 12)
@@ -1190,7 +1346,7 @@ legend(x = 100, y = 100, xjust = 1, yjust = 1, lty = c(1,1,1), lwd = 3, legend =
 #dev.off()
 ```
 
-#### Species abundances
+### Species abundances
 
 ``` r
 nspecies <- ncol(predicted_com_late)
