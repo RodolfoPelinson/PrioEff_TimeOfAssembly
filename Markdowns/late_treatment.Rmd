@@ -561,11 +561,11 @@ par(mar = c(4, 4, 1, 1))
   
 plot(NA, xlim = c(xmin, xmax), ylim = c(ymin, ymax), xlab = "", ylab = "", xaxt = "n", yaxt = "n")
 
-lines(x = points_late_controle[,1], y = points_late_controle[,2], lwd = 3, lty = 1, col = "#009E73") #controle
+lines(x = points_late_controle[,1], y = points_late_controle[,2], lwd = 3, lty = 1, col = "#56B4E9") #controle
 
 lines(x = points_late_atrasado[,1], y = points_late_atrasado[,2], lwd = 3, lty = 1, col = "#D55E00") #atrasado
 
-lines(x = points_late_fechado[,1], y = points_late_fechado[,2], lwd = 3, lty = 1, col = "#56B4E9") #fechado
+lines(x = points_late_fechado[,1], y = points_late_fechado[,2], lwd = 3, lty = 1, col = "#009E73") #fechado
 
 
 
