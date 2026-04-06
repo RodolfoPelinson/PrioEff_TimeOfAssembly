@@ -368,11 +368,11 @@ permutations <- shuffleSet(nrow(comm_all_late_experiment[Exp_design_all_late_exp
 ```{r, cache = TRUE}
 
 
-mod_no_treatment_late_exp_control <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado",] ~ block2 + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",], composition = FALSE)
+mod_no_treatment_late_exp_control <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado",] ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",], composition = FALSE)
 
-mod_treatment_late_exp_control <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado",] ~ block2 + treatments + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",], composition = FALSE)
+mod_treatment_late_exp_control <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado",] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",], composition = FALSE)
 
-mod_treatment_interaction_late_exp_control <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado",] ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",], composition = FALSE)
+mod_treatment_interaction_late_exp_control <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "fechado",] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "fechado",], composition = FALSE)
 
 anova_treatments_test_late_exp_control <- anova(mod_no_treatment_late_exp_control, mod_treatment_late_exp_control, mod_treatment_interaction_late_exp_control, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 
@@ -393,11 +393,11 @@ permutations <- shuffleSet(nrow(comm_all_late_experiment[Exp_design_all_late_exp
 
 
 ```{r, cache = TRUE}
-mod_no_treatment_late_exp_fechado <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle",] ~ block2 + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",], composition = FALSE)
+mod_no_treatment_late_exp_fechado <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle",] ~ block2 + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",], composition = FALSE)
 
-mod_treatment_late_exp_fechado <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle",] ~ block2 + treatments + AM_days_sc, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",], composition = FALSE)
+mod_treatment_late_exp_fechado <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle",] ~ block2 + treatments + AM_days_sc + AM_days_sc_squared, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",], composition = FALSE)
 
-mod_treatment_interaction_late_exp_fechado <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle",] ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",], composition = FALSE)
+mod_treatment_interaction_late_exp_fechado <- manyglm(comm_all_late_experiment_mv[Exp_design_all_late_experiment$treatments != "controle",] ~ block2 + treatments + AM_days_sc + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment[Exp_design_all_late_experiment$treatments != "controle",], composition = FALSE)
 
 anova_treatments_test_late_exp_fechado <- anova(mod_no_treatment_late_exp_fechado, mod_treatment_late_exp_fechado, mod_treatment_interaction_late_exp_fechado, bootID = permutations, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
 
