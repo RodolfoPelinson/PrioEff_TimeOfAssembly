@@ -983,6 +983,656 @@ anova_treatments_test_late_experiment_exclusion
     ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
+# Making predictions with two big models
+
+``` r
+comm_all_late_colonization <- remove_sp(comm_all_late_colonization, 1)
+comm_all_late_colonization_mv <- mvabund(comm_all_late_colonization)
+
+
+mod_treatment_interaction_colonization <- manyglm(comm_all_late_colonization_mv ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = Exp_design_all_late_colonization, composition = FALSE)
+
+
+comm_all_late_experiment <- remove_sp(comm_all_late_experiment, 1)
+comm_all_late_experiment_mv <- mvabund(comm_all_late_experiment)
+
+mod_treatment_interaction_experiment <- manyglm(comm_all_late_experiment_mv ~ block2 + treatments + AM_days_sc +  AM_days_sc:treatments, family="negative.binomial",  data = Exp_design_all_late_experiment, composition = FALSE)
+```
+
+``` r
+#Controle
+new_data_controle_AB <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100),
+                                   AM_days_sc_squared = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100)^2,
+                                   treatments = factor(rep("controle", 100), levels = levels(as.factor(Exp_design_all_late_colonization$treatments))),
+                                   block2 = factor(rep("AB", 100), levels = levels(as.factor(Exp_design_all_late_colonization$block2))))
+
+new_data_controle_CD <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100),
+                                   AM_days_sc_squared = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100)^2,
+                                   treatments = factor(rep("controle", 100), levels = levels(as.factor(Exp_design_all_late_colonization$treatments))),
+                                   block2 = factor(rep("CD", 100), levels = levels(as.factor(Exp_design_all_late_colonization$block2))))
+
+new_data_controle_EF <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100),
+                                   AM_days_sc_squared = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100)^2,
+                                   treatments = factor(rep("controle", 100), levels = levels(as.factor(Exp_design_all_late_colonization$treatments))),
+                                   block2 = factor(rep("EF", 100), levels = levels(as.factor(Exp_design_all_late_colonization$block2))))
+
+pred_controle_AB <- predict.manyglm(mod_treatment_interaction_colonization, newdata = new_data_controle_AB, type = "response")
+pred_controle_CD <- predict.manyglm(mod_treatment_interaction_colonization, newdata = new_data_controle_CD, type = "response")
+pred_controle_EF <- predict.manyglm(mod_treatment_interaction_colonization, newdata = new_data_controle_EF, type = "response")
+
+pred_controle <- array(NA, dim = c(nrow(pred_controle_AB), ncol(pred_controle_AB), 3))
+pred_controle[,,1] <- pred_controle_AB
+pred_controle[,,2] <- pred_controle_CD
+pred_controle[,,3] <- pred_controle_EF
+
+pred_controle_mean_late_colonization <- apply(pred_controle, MARGIN = c(1,2), FUN = mean)
+colnames(pred_controle_mean_late_colonization) <- colnames(comm_all_late_colonization)
+
+
+
+
+#fechado
+new_data_fechado_AB <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100),
+                                  AM_days_sc_squared = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100)^2,
+                                  treatments = factor(rep("fechado", 100), levels = levels(as.factor(Exp_design_all_late_colonization$treatments))),
+                                  block2 = factor(rep("AB", 100), levels = levels(as.factor(Exp_design_all_late_colonization$block2))))
+
+new_data_fechado_CD <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100),
+                                  AM_days_sc_squared = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100)^2,
+                                  treatments = factor(rep("fechado", 100), levels = levels(as.factor(Exp_design_all_late_colonization$treatments))),
+                                  block2 = factor(rep("CD", 100), levels = levels(as.factor(Exp_design_all_late_colonization$block2))))
+
+new_data_fechado_EF <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100),
+                                  AM_days_sc_squared = seq(from = min(Exp_design_all_late_colonization$AM_days_sc), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100)^2,
+                                  treatments = factor(rep("fechado", 100), levels = levels(as.factor(Exp_design_all_late_colonization$treatments))),
+                                  block2 = factor(rep("EF", 100), levels = levels(as.factor(Exp_design_all_late_colonization$block2))))
+
+pred_fechado_AB <- predict.manyglm(mod_treatment_interaction_colonization, newdata = new_data_fechado_AB, type = "response")
+pred_fechado_CD <- predict.manyglm(mod_treatment_interaction_colonization, newdata = new_data_fechado_CD, type = "response")
+pred_fechado_EF <- predict.manyglm(mod_treatment_interaction_colonization, newdata = new_data_fechado_EF, type = "response")
+
+pred_fechado <- array(NA, dim = c(nrow(pred_fechado_AB), ncol(pred_fechado_AB), 3))
+pred_fechado[,,1] <- pred_fechado_AB
+pred_fechado[,,2] <- pred_fechado_CD
+pred_fechado[,,3] <- pred_fechado_EF
+
+pred_fechado_mean_late_colonization <- apply(pred_fechado, MARGIN = c(1,2), FUN = mean)
+colnames(pred_fechado_mean_late_colonization) <- colnames(comm_all_late_colonization)
+
+
+
+
+
+#atrasado
+new_data_atrasado_AB <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_colonization$AM_days_sc[Exp_design_all_late_colonization$treatments == "atrasado"]), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100),
+                                        AM_days_sc_squared = seq(from = min(Exp_design_all_late_colonization$AM_days_sc[Exp_design_all_late_colonization$treatments == "atrasado"]), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100)^2,
+                                        treatments = factor(rep("atrasado", 100), levels = levels(as.factor(Exp_design_all_late_colonization$treatments))),
+                                        block2 = factor(rep("AB", 100), levels = levels(as.factor(Exp_design_all_late_colonization$block2))))
+
+new_data_atrasado_CD <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_colonization$AM_days_sc[Exp_design_all_late_colonization$treatments == "atrasado"]), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100),
+                                        AM_days_sc_squared = seq(from = min(Exp_design_all_late_colonization$AM_days_sc[Exp_design_all_late_colonization$treatments == "atrasado"]), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100)^2,
+                                        treatments = factor(rep("atrasado", 100), levels = levels(as.factor(Exp_design_all_late_colonization$treatments))),
+                                        block2 = factor(rep("CD", 100), levels = levels(as.factor(Exp_design_all_late_colonization$block2))))
+
+new_data_atrasado_EF <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_colonization$AM_days_sc[Exp_design_all_late_colonization$treatments == "atrasado"]), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100),
+                                        AM_days_sc_squared = seq(from = min(Exp_design_all_late_colonization$AM_days_sc[Exp_design_all_late_colonization$treatments == "atrasado"]), to = max(Exp_design_all_late_colonization$AM_days_sc), length.out = 100)^2,
+                                        treatments = factor(rep("atrasado", 100), levels = levels(as.factor(Exp_design_all_late_colonization$treatments))),
+                                        block2 = factor(rep("EF", 100), levels = levels(as.factor(Exp_design_all_late_colonization$block2))))
+
+pred_atrasado_AB <- predict.manyglm(mod_treatment_interaction_colonization, newdata = new_data_atrasado_AB, type = "response")
+pred_atrasado_CD <- predict.manyglm(mod_treatment_interaction_colonization, newdata = new_data_atrasado_CD, type = "response")
+pred_atrasado_EF <- predict.manyglm(mod_treatment_interaction_colonization, newdata = new_data_atrasado_EF, type = "response")
+
+pred_atrasado <- array(NA, dim = c(nrow(pred_atrasado_AB), ncol(pred_atrasado_AB), 3))
+pred_atrasado[,,1] <- pred_atrasado_AB
+pred_atrasado[,,2] <- pred_atrasado_CD
+pred_atrasado[,,3] <- pred_atrasado_EF
+
+pred_atrasado_mean_late_colonization <- apply(pred_atrasado, MARGIN = c(1,2), FUN = mean)
+colnames(pred_atrasado_mean_late_colonization) <- colnames(comm_all_late_colonization)
+```
+
+``` r
+#Controle
+new_data_controle_AB <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100),
+                                   AM_days_sc_squared = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100)^2,
+                                   treatments = factor(rep("controle", 100), levels = levels(as.factor(Exp_design_all_late_experiment$treatments))),
+                                   block2 = factor(rep("AB", 100), levels = levels(as.factor(Exp_design_all_late_experiment$block2))))
+
+new_data_controle_CD <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100),
+                                   AM_days_sc_squared = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100)^2,
+                                   treatments = factor(rep("controle", 100), levels = levels(as.factor(Exp_design_all_late_experiment$treatments))),
+                                   block2 = factor(rep("CD", 100), levels = levels(as.factor(Exp_design_all_late_experiment$block2))))
+
+new_data_controle_EF <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100),
+                                   AM_days_sc_squared = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100)^2,
+                                   treatments = factor(rep("controle", 100), levels = levels(as.factor(Exp_design_all_late_experiment$treatments))),
+                                   block2 = factor(rep("EF", 100), levels = levels(as.factor(Exp_design_all_late_experiment$block2))))
+
+pred_controle_AB <- predict.manyglm(mod_treatment_interaction_experiment, newdata = new_data_controle_AB, type = "response")
+pred_controle_CD <- predict.manyglm(mod_treatment_interaction_experiment, newdata = new_data_controle_CD, type = "response")
+pred_controle_EF <- predict.manyglm(mod_treatment_interaction_experiment, newdata = new_data_controle_EF, type = "response")
+
+pred_controle <- array(NA, dim = c(nrow(pred_controle_AB), ncol(pred_controle_AB), 3))
+pred_controle[,,1] <- pred_controle_AB
+pred_controle[,,2] <- pred_controle_CD
+pred_controle[,,3] <- pred_controle_EF
+
+pred_controle_mean_late_experiment <- apply(pred_controle, MARGIN = c(1,2), FUN = mean)
+colnames(pred_controle_mean_late_experiment) <- colnames(comm_all_late_experiment)
+
+
+
+
+#fechado
+new_data_fechado_AB <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100),
+                                  AM_days_sc_squared = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100)^2,
+                                  treatments = factor(rep("fechado", 100), levels = levels(as.factor(Exp_design_all_late_experiment$treatments))),
+                                  block2 = factor(rep("AB", 100), levels = levels(as.factor(Exp_design_all_late_experiment$block2))))
+
+new_data_fechado_CD <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100),
+                                  AM_days_sc_squared = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100)^2,
+                                  treatments = factor(rep("fechado", 100), levels = levels(as.factor(Exp_design_all_late_experiment$treatments))),
+                                  block2 = factor(rep("CD", 100), levels = levels(as.factor(Exp_design_all_late_experiment$block2))))
+
+new_data_fechado_EF <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100),
+                                  AM_days_sc_squared = seq(from = min(Exp_design_all_late_experiment$AM_days_sc), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100)^2,
+                                  treatments = factor(rep("fechado", 100), levels = levels(as.factor(Exp_design_all_late_experiment$treatments))),
+                                  block2 = factor(rep("EF", 100), levels = levels(as.factor(Exp_design_all_late_experiment$block2))))
+
+pred_fechado_AB <- predict.manyglm(mod_treatment_interaction_experiment, newdata = new_data_fechado_AB, type = "response")
+pred_fechado_CD <- predict.manyglm(mod_treatment_interaction_experiment, newdata = new_data_fechado_CD, type = "response")
+pred_fechado_EF <- predict.manyglm(mod_treatment_interaction_experiment, newdata = new_data_fechado_EF, type = "response")
+
+pred_fechado <- array(NA, dim = c(nrow(pred_fechado_AB), ncol(pred_fechado_AB), 3))
+pred_fechado[,,1] <- pred_fechado_AB
+pred_fechado[,,2] <- pred_fechado_CD
+pred_fechado[,,3] <- pred_fechado_EF
+
+pred_fechado_mean_late_experiment <- apply(pred_fechado, MARGIN = c(1,2), FUN = mean)
+colnames(pred_fechado_mean_late_experiment) <- colnames(comm_all_late_experiment)
+
+
+
+
+
+#atrasado
+new_data_atrasado_AB <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_experiment$AM_days_sc[Exp_design_all_late_experiment$treatments == "atrasado"]), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100),
+                                        AM_days_sc_squared = seq(from = min(Exp_design_all_late_experiment$AM_days_sc[Exp_design_all_late_experiment$treatments == "atrasado"]), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100)^2,
+                                        treatments = factor(rep("atrasado", 100), levels = levels(as.factor(Exp_design_all_late_experiment$treatments))),
+                                        block2 = factor(rep("AB", 100), levels = levels(as.factor(Exp_design_all_late_experiment$block2))))
+
+new_data_atrasado_CD <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_experiment$AM_days_sc[Exp_design_all_late_experiment$treatments == "atrasado"]), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100),
+                                        AM_days_sc_squared = seq(from = min(Exp_design_all_late_experiment$AM_days_sc[Exp_design_all_late_experiment$treatments == "atrasado"]), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100)^2,
+                                        treatments = factor(rep("atrasado", 100), levels = levels(as.factor(Exp_design_all_late_experiment$treatments))),
+                                        block2 = factor(rep("CD", 100), levels = levels(as.factor(Exp_design_all_late_experiment$block2))))
+
+new_data_atrasado_EF <- data.frame(AM_days_sc = seq(from = min(Exp_design_all_late_experiment$AM_days_sc[Exp_design_all_late_experiment$treatments == "atrasado"]), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100),
+                                        AM_days_sc_squared = seq(from = min(Exp_design_all_late_experiment$AM_days_sc[Exp_design_all_late_experiment$treatments == "atrasado"]), to = max(Exp_design_all_late_experiment$AM_days_sc), length.out = 100)^2,
+                                        treatments = factor(rep("atrasado", 100), levels = levels(as.factor(Exp_design_all_late_experiment$treatments))),
+                                        block2 = factor(rep("EF", 100), levels = levels(as.factor(Exp_design_all_late_experiment$block2))))
+
+pred_atrasado_AB <- predict.manyglm(mod_treatment_interaction_experiment, newdata = new_data_atrasado_AB, type = "response")
+pred_atrasado_CD <- predict.manyglm(mod_treatment_interaction_experiment, newdata = new_data_atrasado_CD, type = "response")
+pred_atrasado_EF <- predict.manyglm(mod_treatment_interaction_experiment, newdata = new_data_atrasado_EF, type = "response")
+
+pred_atrasado <- array(NA, dim = c(nrow(pred_atrasado_AB), ncol(pred_atrasado_AB), 3))
+pred_atrasado[,,1] <- pred_atrasado_AB
+pred_atrasado[,,2] <- pred_atrasado_CD
+pred_atrasado[,,3] <- pred_atrasado_EF
+
+pred_atrasado_mean_late_experiment <- apply(pred_atrasado, MARGIN = c(1,2), FUN = mean)
+colnames(pred_atrasado_mean_late_experiment) <- colnames(comm_all_late_experiment)
+```
+
+``` r
+predicted_com_late_colonization <- rbind(pred_controle_mean_late_colonization, pred_fechado_mean_late_colonization, pred_atrasado_mean_late_colonization)
+
+predicted_com_late_relative_colonization <- decostand(predicted_com_late_colonization, method = "total", MARGIN = 2)
+
+set.seed(1); nmds_predicted_late_com_colonization <- metaMDS(predicted_com_late_relative_colonization, distance = "bray", k = 2, trymax  = 20, try = 20, engine = "monoMDS", autotransform  = TRUE)
+```
+
+    ## Run 0 stress 0.1759553 
+    ## Run 1 stress 0.167451 
+    ## ... New best solution
+    ## ... Procrustes: rmse 0.02587846  max resid 0.3213277 
+    ## Run 2 stress 0.1949966 
+    ## Run 3 stress 0.167432 
+    ## ... New best solution
+    ## ... Procrustes: rmse 0.000508831  max resid 0.008362452 
+    ## ... Similar to previous best
+    ## Run 4 stress 0.167432 
+    ## ... New best solution
+    ## ... Procrustes: rmse 3.466996e-05  max resid 0.0005277177 
+    ## ... Similar to previous best
+    ## Run 5 stress 0.1793133 
+    ## Run 6 stress 0.167451 
+    ## ... Procrustes: rmse 0.000509509  max resid 0.008599339 
+    ## ... Similar to previous best
+    ## Run 7 stress 0.167432 
+    ## ... Procrustes: rmse 6.936741e-05  max resid 0.0008707138 
+    ## ... Similar to previous best
+    ## Run 8 stress 0.193897 
+    ## Run 9 stress 0.1704892 
+    ## Run 10 stress 0.1940635 
+    ## Run 11 stress 0.1892207 
+    ## Run 12 stress 0.1719704 
+    ## Run 13 stress 0.1674378 
+    ## ... Procrustes: rmse 0.0009929324  max resid 0.01191533 
+    ## Run 14 stress 0.1930117 
+    ## Run 15 stress 0.167432 
+    ## ... New best solution
+    ## ... Procrustes: rmse 0.0001047829  max resid 0.001732394 
+    ## ... Similar to previous best
+    ## Run 16 stress 0.1902966 
+    ## Run 17 stress 0.1704892 
+    ## Run 18 stress 0.1674148 
+    ## ... New best solution
+    ## ... Procrustes: rmse 0.0005697702  max resid 0.009387643 
+    ## ... Similar to previous best
+    ## Run 19 stress 0.1674148 
+    ## ... Procrustes: rmse 7.588519e-05  max resid 0.001268461 
+    ## ... Similar to previous best
+    ## Run 20 stress 0.1674341 
+    ## ... Procrustes: rmse 0.0005131158  max resid 0.008613868 
+    ## ... Similar to previous best
+    ## *** Best solution repeated 3 times
+
+``` r
+predicted_com_late_experiment <- rbind(pred_controle_mean_late_experiment, pred_fechado_mean_late_experiment, pred_atrasado_mean_late_experiment)
+
+predicted_com_late_relative_experiment <- decostand(predicted_com_late_experiment, method = "total", MARGIN = 2)
+
+set.seed(1); nmds_predicted_late_com_experiment <- metaMDS(predicted_com_late_relative_experiment, distance = "bray", k = 2, trymax  = 20, try = 20, engine = "monoMDS", autotransform  = TRUE)
+```
+
+    ## Run 0 stress 0.1527882 
+    ## Run 1 stress 0.1513791 
+    ## ... New best solution
+    ## ... Procrustes: rmse 0.02227623  max resid 0.08455816 
+    ## Run 2 stress 0.1513791 
+    ## ... Procrustes: rmse 6.436988e-05  max resid 0.0009870292 
+    ## ... Similar to previous best
+    ## Run 3 stress 0.1513793 
+    ## ... Procrustes: rmse 0.0001152687  max resid 0.001614377 
+    ## ... Similar to previous best
+    ## Run 4 stress 0.1513791 
+    ## ... New best solution
+    ## ... Procrustes: rmse 2.415027e-05  max resid 0.0002921576 
+    ## ... Similar to previous best
+    ## Run 5 stress 0.1513792 
+    ## ... Procrustes: rmse 8.263066e-05  max resid 0.001323578 
+    ## ... Similar to previous best
+    ## Run 6 stress 0.1513794 
+    ## ... Procrustes: rmse 9.39147e-05  max resid 0.001068803 
+    ## ... Similar to previous best
+    ## Run 7 stress 0.1527881 
+    ## Run 8 stress 0.1527882 
+    ## Run 9 stress 0.1513795 
+    ## ... Procrustes: rmse 0.0001284307  max resid 0.001874725 
+    ## ... Similar to previous best
+    ## Run 10 stress 0.1513793 
+    ## ... Procrustes: rmse 0.0001103714  max resid 0.001813661 
+    ## ... Similar to previous best
+    ## Run 11 stress 0.1513792 
+    ## ... Procrustes: rmse 8.948631e-05  max resid 0.001405759 
+    ## ... Similar to previous best
+    ## Run 12 stress 0.1513791 
+    ## ... New best solution
+    ## ... Procrustes: rmse 2.786131e-05  max resid 0.0003726972 
+    ## ... Similar to previous best
+    ## Run 13 stress 0.1513793 
+    ## ... Procrustes: rmse 0.000100576  max resid 0.001409632 
+    ## ... Similar to previous best
+    ## Run 14 stress 0.1528051 
+    ## Run 15 stress 0.1513792 
+    ## ... Procrustes: rmse 4.630639e-05  max resid 0.0003301577 
+    ## ... Similar to previous best
+    ## Run 16 stress 0.1544987 
+    ## Run 17 stress 0.1528051 
+    ## Run 18 stress 0.1513792 
+    ## ... Procrustes: rmse 7.956833e-05  max resid 0.001238024 
+    ## ... Similar to previous best
+    ## Run 19 stress 0.1527882 
+    ## Run 20 stress 0.1513792 
+    ## ... Procrustes: rmse 5.786908e-05  max resid 0.0009001892 
+    ## ... Similar to previous best
+    ## *** Best solution repeated 5 times
+
+``` r
+find_day <- function(day, min, max, length = 100){
+  
+  new_day <- day - min
+  range <- max - min
+  
+  result <- round((new_day*length)/range)
+  
+  if(result == 0){result <- 1}
+  
+  return(result)
+  
+}
+```
+
+## Plotting
+
+### Whole community
+
+``` r
+close.screen(all.screens = TRUE)
+```
+
+    ## [1] FALSE
+
+``` r
+split.screen(matrix(c(0  , 0.5, 0, 1  ,
+                      0.5, 1  , 0, 1  ), ncol = 4, nrow = 2, byrow = TRUE))
+```
+
+    ## [1] 1 2
+
+``` r
+#svg(filename = "Plots/Late_analysis/late_treatment.svg", width = 10, height = 4.5, pointsize = 12)
+screen(1)
+
+points_late_controle <- nmds_predicted_late_com_colonization$points[1:100,1:2]
+points_late_fechado <- nmds_predicted_late_com_colonization$points[101:200,1:2]
+points_late_atrasado <- nmds_predicted_late_com_colonization$points[201:300,1:2]
+species_late <- nmds_predicted_late_com_colonization$species[,1:2]
+
+set.seed(3);species_late_n <- jitter(species_late, amount = 0.3)
+
+xmin <- min(c(points_late_controle[,1], points_late_fechado[,1], points_late_atrasado[,1], species_late_n[,1]))*1.1
+xmax <- max(c(points_late_controle[,1], points_late_fechado[,1], points_late_atrasado[,1], species_late_n[,1]))*1.1
+ymin <- min(c(points_late_controle[,2], points_late_fechado[,2], points_late_atrasado[,2], species_late_n[,2]))*1.1
+ymax <- max(c(points_late_controle[,2], points_late_fechado[,2], points_late_atrasado[,2], species_late_n[,2]))*1.1
+
+par(mar = c(4, 4, 1, 1))
+  
+plot(NA, xlim = c(xmin, xmax), ylim = c(ymin, ymax), xlab = "", ylab = "", xaxt = "n", yaxt = "n")
+
+lines(x = points_late_controle[,1], y = points_late_controle[,2], lwd = 3, lty = 1, col = "#56B4E9") #controle
+
+lines(x = points_late_atrasado[,1], y = points_late_atrasado[,2], lwd = 3, lty = 1, col = "#D55E00") #atrasado
+
+lines(x = points_late_fechado[,1], y = points_late_fechado[,2], lwd = 3, lty = 1, col = "#009E73") #fechado
+
+
+
+
+#####################################################################
+
+##################################################
+
+points(x = points_late_controle[find_day(day = 32, min = 32, max = 116),1],
+       y = points_late_controle[find_day(day = 32, min = 32, max = 116),2],
+       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+
+text(x = points_late_controle[find_day(day = 32, min = 32, max = 116),1],
+       y = points_late_controle[find_day(day = 32, min = 32, max = 116),2], labels = "32", cex = 0.7, font = 2, col = "#56B4E9")
+
+points(x = points_late_controle[find_day(day = 80, min = 32, max = 116),1],
+       y = points_late_controle[find_day(day = 80, min = 32, max = 116),2],
+       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+
+text(x = points_late_controle[find_day(day = 80, min = 32, max = 116),1],
+       y = points_late_controle[find_day(day = 80, min = 32, max = 116),2], labels = "80", cex = 0.7, font = 2, col = "#56B4E9")
+
+points(x = points_late_controle[find_day(day = 116, min = 32, max = 116),1],
+       y = points_late_controle[find_day(day = 116, min = 32, max = 116),2],
+       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+
+text(x = points_late_controle[find_day(day = 116, min = 32, max = 116),1],
+       y = points_late_controle[find_day(day = 116, min = 32, max = 116),2], labels = "116", cex = 0.7, font = 2, col = "#56B4E9")
+
+#################################################
+
+
+##################################################
+
+points(x = points_late_fechado[find_day(day = 32, min = 32, max = 116),1],
+       y = points_late_fechado[find_day(day = 32, min = 32, max = 116),2],
+       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+
+text(x = points_late_fechado[find_day(day = 32, min = 32, max = 116),1],
+       y = points_late_fechado[find_day(day = 32, min = 32, max = 116),2], labels = "32", cex = 0.7, col = "#009E73", font = 2)
+
+points(x = points_late_fechado[find_day(day = 80, min = 32, max = 116),1],
+       y = points_late_fechado[find_day(day = 80, min = 32, max = 116),2],
+       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+
+text(x = points_late_fechado[find_day(day = 80, min = 32, max = 116),1],
+       y = points_late_fechado[find_day(day = 80, min = 32, max = 116),2], labels = "80", cex = 0.7, col = "#009E73", font = 2)
+
+points(x = points_late_fechado[find_day(day = 116, min = 32, max = 116),1],
+       y = points_late_fechado[find_day(day = 116, min = 32, max = 116),2],
+       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+
+text(x = points_late_fechado[find_day(day = 116, min = 32, max = 116),1],
+       y = points_late_fechado[find_day(day = 116, min = 32, max = 116),2], labels = "116", cex = 0.7, col = "#009E73", font = 2)
+
+#################################################
+
+
+
+
+##################################################
+
+points(x = points_late_atrasado[find_day(day = 33, min = 33, max = 111),1],
+       y = points_late_atrasado[find_day(day = 33, min = 33, max = 111),2],
+       pch = 21, bg = "white", col = "#D55E00", lwd = 3, cex = 3.5)
+
+text(x = points_late_atrasado[find_day(day = 33, min = 33, max = 111),1],
+       y = points_late_atrasado[find_day(day = 33, min = 33, max = 111),2], labels = "33", cex = 0.7, col = "#D55E00", font = 2)
+
+points(x = points_late_atrasado[find_day(day = 69, min = 33, max = 111),1],
+       y = points_late_atrasado[find_day(day = 69, min = 33, max = 111),2],
+       pch = 21, bg = "white", col = "#D55E00", lwd = 3, cex = 3.5)
+
+text(x = points_late_atrasado[find_day(day = 69, min = 33, max = 111),1],
+       y = points_late_atrasado[find_day(day = 69, min = 33, max = 111),2], labels = "69", cex = 0.7, col = "#D55E00", font = 2)
+
+points(x = points_late_atrasado[find_day(day = 111, min = 33, max = 111),1],
+       y = points_late_atrasado[find_day(day = 111, min = 33, max = 111),2],
+       pch = 21, bg = "white", col = "#D55E00", lwd = 3, cex = 3.5)
+
+text(x = points_late_atrasado[find_day(day = 111, min = 33, max = 111),1],
+       y = points_late_atrasado[find_day(day = 111, min = 33, max = 111),2], labels = "111", cex = 0.7, col = "#D55E00", font = 2)
+#################################################
+
+
+########################## SPECIES #################################
+
+
+sp_names <- rownames(species_late_n)
+sp_names <- substr(sp_names, start = 1, stop = 3)
+
+
+for(i in 1:nrow(species_late_n)){
+  #points(x = species_late_n[i,1],
+   #    y = species_late_n[i,2],
+    #   pch = 21, bg = "white", col = "grey50", lwd = 2, cex = 4)
+
+text_contour(x = species_late_n[i,1],
+       y = species_late_n[i,2], labels = sp_names[i], cex = 0.8, col = "white", thick = 0.004)
+  
+text(x = species_late_n[i,1],
+       y = species_late_n[i,2], labels = sp_names[i], cex = 0.8, col = "grey30")
+}
+
+
+
+
+axis(1)
+axis(2)
+
+title(xlab = "nMDS 1", line = 2.5, cex.lab = 1.2)
+title(ylab = "nMDS 2", line = 2.5, cex.lab = 1.2)
+
+
+#par(new = TRUE)
+#plot(NA, xlim = c(0, 100), ylim = c(0, 100), xlab = "", ylab = "", xaxt = "n", yaxt = "n", bty = "n")
+
+#legend(x = 100, y = 100, xjust = 1, yjust = 1, lty = c(1,1,1), lwd = 3, legend = c("Control", "Exclusion", "Late"), col = c( "#56B4E9", "#009E73","#D55E00"), bty = "n")
+
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+
+
+
+screen(2)
+
+points_late_controle <- nmds_predicted_late_com_experiment$points[1:100,1:2]
+points_late_fechado <- nmds_predicted_late_com_experiment$points[101:200,1:2]
+points_late_atrasado <- nmds_predicted_late_com_experiment$points[201:300,1:2]
+species_late <- nmds_predicted_late_com_experiment$species[,1:2]
+
+
+set.seed(1);species_late_n <- jitter(species_late, amount = 0.25)
+
+xmin <- min(c(points_late_controle[,1], points_late_fechado[,1], points_late_atrasado[,1], species_late_n[,1]))*1.1
+xmax <- max(c(points_late_controle[,1], points_late_fechado[,1], points_late_atrasado[,1], species_late_n[,1]))*1.1
+ymin <- min(c(points_late_controle[,2], points_late_fechado[,2], points_late_atrasado[,2], species_late_n[,2]))*1.1
+ymax <- max(c(points_late_controle[,2], points_late_fechado[,2], points_late_atrasado[,2], species_late_n[,2]))*1.1
+
+par(mar = c(4, 4, 1, 1))
+  
+plot(NA, xlim = c(xmin, xmax), ylim = c(ymin, ymax), xlab = "", ylab = "", xaxt = "n", yaxt = "n")
+
+lines(x = points_late_controle[,1], y = points_late_controle[,2], lwd = 3, lty = 1, col = "#56B4E9") #controle
+
+lines(x = points_late_atrasado[,1], y = points_late_atrasado[,2], lwd = 3, lty = 1, col = "#D55E00") #atrasado
+
+lines(x = points_late_fechado[,1], y = points_late_fechado[,2], lwd = 3, lty = 1, col = "#009E73") #fechado
+
+
+
+
+#####################################################################
+
+##################################################
+
+points(x = points_late_controle[find_day(day = 80, min = 80, max = 158),1],
+       y = points_late_controle[find_day(day = 80, min = 80, max = 158),2],
+       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+
+text(x = points_late_controle[find_day(day = 80, min = 80, max = 158),1],
+       y = points_late_controle[find_day(day = 80, min = 80, max = 158),2], labels = "80", cex = 0.7, font = 2, col = "#56B4E9")
+
+points(x = points_late_controle[find_day(day = 116, min = 80, max = 158),1],
+       y = points_late_controle[find_day(day = 116, min = 80, max = 158),2],
+       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+
+text(x = points_late_controle[find_day(day = 116, min = 80, max = 158),1],
+       y = points_late_controle[find_day(day = 116, min = 80, max = 158),2], labels = "116", cex = 0.7, font = 2, col = "#56B4E9")
+
+points(x = points_late_controle[find_day(day = 158, min = 80, max = 158),1],
+       y = points_late_controle[find_day(day = 158, min = 80, max = 158),2],
+       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+
+text(x = points_late_controle[find_day(day = 158, min = 80, max = 158),1],
+       y = points_late_controle[find_day(day = 158, min = 80, max = 158),2], labels = "158", cex = 0.7, font = 2, col = "#56B4E9")
+
+#################################################
+
+
+##################################################
+
+points(x = points_late_fechado[find_day(day = 80, min = 80, max = 158),1],
+       y = points_late_fechado[find_day(day = 80, min = 80, max = 158),2],
+       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+
+text(x = points_late_fechado[find_day(day = 80, min = 80, max = 158),1],
+       y = points_late_fechado[find_day(day = 80, min = 80, max = 158),2], labels = "80", cex = 0.7, col = "#009E73", font = 2)
+
+points(x = points_late_fechado[find_day(day = 116, min = 80, max = 158),1],
+       y = points_late_fechado[find_day(day = 116, min = 80, max = 158),2],
+       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+
+text(x = points_late_fechado[find_day(day = 116, min = 80, max = 158),1],
+       y = points_late_fechado[find_day(day = 116, min = 80, max = 158),2], labels = "116", cex = 0.7, col = "#009E73", font = 2)
+
+points(x = points_late_fechado[find_day(day = 158, min = 80, max = 158),1],
+       y = points_late_fechado[find_day(day = 158, min = 80, max = 158),2],
+       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+
+text(x = points_late_fechado[find_day(day = 158, min = 80, max = 158),1],
+       y = points_late_fechado[find_day(day = 158, min = 80, max = 158),2], labels = "158", cex = 0.7, col = "#009E73", font = 2)
+
+#################################################
+
+
+
+
+##################################################
+
+points(x = points_late_atrasado[find_day(day = 80, min = 80, max = 158),1],
+       y = points_late_atrasado[find_day(day = 80, min = 80, max = 158),2],
+       pch = 21, bg = "white", col = "#D55E00", lwd = 3, cex = 3.5)
+
+text(x = points_late_atrasado[find_day(day = 80, min = 80, max = 158),1],
+       y = points_late_atrasado[find_day(day = 80, min = 80, max = 158),2], labels = "80", cex = 0.7, col = "#D55E00", font = 2)
+
+points(x = points_late_atrasado[find_day(day = 116, min = 80, max = 158),1],
+       y = points_late_atrasado[find_day(day = 116, min = 80, max = 158),2],
+       pch = 21, bg = "white", col = "#D55E00", lwd = 3, cex = 3.5)
+
+text(x = points_late_atrasado[find_day(day = 116, min = 80, max = 158),1],
+       y = points_late_atrasado[find_day(day = 116, min = 80, max = 158),2], labels = "116", cex = 0.7, col = "#D55E00", font = 2)
+
+points(x = points_late_atrasado[find_day(day = 158, min = 80, max = 158),1],
+       y = points_late_atrasado[find_day(day = 158, min = 80, max = 158),2],
+       pch = 21, bg = "white", col = "#D55E00", lwd = 3, cex = 3.5)
+
+text(x = points_late_atrasado[find_day(day = 158, min = 80, max = 158),1],
+       y = points_late_atrasado[find_day(day = 158, min = 80, max = 158),2], labels = "158", cex = 0.7, col = "#D55E00", font = 2)
+#################################################
+
+
+########################## SPECIES #################################
+
+
+sp_names <- rownames(species_late_n)
+sp_names <- substr(sp_names, start = 1, stop = 3)
+
+
+for(i in 1:nrow(species_late_n)){
+  #points(x = species_late_n[i,1],
+   #    y = species_late_n[i,2],
+    #   pch = 21, bg = "white", col = "grey50", lwd = 2, cex = 4)
+
+text_contour(x = species_late_n[i,1],
+       y = species_late_n[i,2], labels = sp_names[i], cex = 0.8, col = "white", thick = 0.004)
+  
+text(x = species_late_n[i,1],
+       y = species_late_n[i,2], labels = sp_names[i], cex = 0.8, col = "grey30")
+}
+
+
+
+
+axis(1)
+axis(2)
+
+title(xlab = "nMDS 1", line = 2.5, cex.lab = 1.2)
+title(ylab = "nMDS 2", line = 2.5, cex.lab = 1.2)
+
+
+par(new = TRUE)
+plot(NA, xlim = c(0, 100), ylim = c(0, 100), xlab = "", ylab = "", xaxt = "n", yaxt = "n", bty = "n")
+
+legend(x = 100, y = 0, xjust = 1, yjust = 0, lty = c(1,1,1), lwd = 3, legend = c("Control", "Exclusion", "Late"),
+       col = c( "#56B4E9", "#009E73","#D55E00"), bty = "n")
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+
+#dev.off()
+```
+
+![](late_treatment_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+
 # Making predictions with one big model
 
 ``` r
@@ -1340,7 +1990,7 @@ plot(NA, xlim = c(0, 100), ylim = c(0, 100), xlab = "", ylab = "", xaxt = "n", y
 legend(x = 100, y = 100, xjust = 1, yjust = 1, lty = c(1,1,1), lwd = 3, legend = c("Control", "Exclusion", "Late"), col = c( "#56B4E9", "#009E73","#D55E00"), bty = "n")
 ```
 
-![](late_treatment_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+![](late_treatment_files/figure-gfm/unnamed-chunk-41-1.png)<!-- -->
 
 ``` r
 #dev.off()
@@ -1460,7 +2110,7 @@ legend(legend = c("Control",
                   "Late"), x = 50, y = 50, bty = "n", lty = 1, lwd = 3, col = c("#56B4E9", "#009E73","#D55E00"), xjust = 0.5, yjust = 0.5)
 ```
 
-![](late_treatment_files/figure-gfm/unnamed-chunk-35-1.png)<!-- -->
+![](late_treatment_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
 
 ``` r
 #dev.off()
