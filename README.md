@@ -11,7 +11,9 @@ The goal of this repository is to guide readers of the paper through the
 data analysis, step by step.
 
 [How does community variability change over
-time?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/beta_deviation.md)
+time?](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/beta_deviation.md) -
+[Analysis of community size, alpha and gamma
+diversity](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/alpha_gamma_size.md)
 
 [Do different initial community structures produce different
 trajectories of community
