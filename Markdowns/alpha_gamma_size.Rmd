@@ -1,0 +1,318 @@
+---
+title: "Community size, alpha and gamma diveristy"
+author: "Rodolfo Pelinson"
+date: "2026-04-12"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+## Loading packages and functions
+
+
+```{r, warning=FALSE, echo = FALSE, include=FALSE}
+dir<-("C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly")
+```
+
+```{r, warning=FALSE, message = FALSE}
+
+source(paste(sep = "/",dir,"functions/remove_sp.R"))
+source(paste(sep = "/",dir,"functions/get_scaled_lvs.R"))
+source(paste(sep = "/",dir,"functions/text_contour.R"))
+source(paste(sep = "/",dir,"functions/letters.R"))
+
+```
+
+```{r, warning=FALSE, message = FALSE}
+
+library(vegan)
+library(gllvm)
+library(mvabund)
+library(DHARMa)
+library(glmmTMB)
+library(vioplot)
+library(yarrr)
+library(colorspace)
+library(iNEXT)
+library(iNEXT.beta3D)
+library(iNEXT.3D)
+library(shape)
+
+```
+
+
+```{r}
+sessionInfo()
+```
+
+## Loading and preparing data
+
+
+```{r, message = FALSE, warning=FALSE}
+source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
+```
+
+
+```{r}
+
+#Now excluding the late treatment because it complicate things
+comm_all_2 <- comm_all[Exp_design_all$treatments != "atrasado",]
+Exp_design_all_2 <- Exp_design_all[Exp_design_all$treatments != "atrasado",]
+
+comm_all_2 <- remove_sp(comm_all_2, 0)
+
+ncol(comm_all_2)
+
+
+nrow(comm_all_2)
+nrow(Exp_design_all_2)
+
+
+ID <-  as.factor(Exp_design_all_2$sites)
+
+AM_by_block <- interaction(as.factor(Exp_design_all_2$block), as.factor( Exp_design_all_2$AM))
+
+
+Exp_design_all_2$AM <- as.factor(Exp_design_all_2$AM)
+Exp_design_all_2$AM_numeric <- as.numeric(Exp_design_all_2$AM)
+Exp_design_all_2$AM_numeric_quad <- Exp_design_all_2$AM_numeric^2
+
+
+Exp_design_all_2$AM_days <- Exp_design_all_2$AM_numeric
+
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_numeric==1] <- 32
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_numeric==2] <- 80
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_numeric==3] <- 116
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_numeric==4] <- 158
+
+Exp_design_all_2$AM_days_st <- scale(Exp_design_all_2$AM_days)
+attr_AM_days <- attributes(Exp_design_all_2$AM_days_st)
+Exp_design_all_2$AM_days_st <- Exp_design_all_2$AM_days_st[,1]
+
+unscale <- function(x, atributes, reverse = FALSE){
+  if(isTRUE(reverse)){
+      x <- (x - atributes$`scaled:center`) / atributes$`scaled:scale` 
+  }else{
+      x <- (x * atributes$`scaled:scale`) + atributes$`scaled:center`
+  }
+  return(x)
+}
+
+Exp_design_all_2$AM_days_quad <- Exp_design_all_2$AM_days^2
+Exp_design_all_2$AM_days_st_quad <- Exp_design_all_2$AM_days_st^2
+
+
+```
+
+
+## Richness
+
+```{r}
+
+
+richness <- rowSums(decostand(comm_all_2, method = "pa"))
+#richness_null <- rowSums(decostand(null_com, method = "pa"))
+
+
+mod_rich_null<- glmmTMB(richness ~ 1 + (1|block2/sites), data = Exp_design_all_2, family ="gaussian")
+mod_rich_day <- glmmTMB(richness ~ AM_days_st + (1|block2/sites), data = Exp_design_all_2, family ="gaussian")
+mod_rich_day_quad <- glmmTMB(richness ~ AM_days_st_quad + AM_days_quad + (1|block2/sites), data = Exp_design_all_2, family ="gaussian")
+
+anova_rich <- anova(mod_rich_null, mod_rich_day, mod_rich_day_quad)
+plot(simulateResiduals(mod_rich_day_quad))
+anova_rich
+
+```
+
+
+## Community size
+
+```{r}
+
+abundance <- rowSums(comm_all_2)
+
+#abundance_10 <- abundance/10
+
+mod_abundance_null<- glmmTMB(abundance ~ 1 + (1|block2/sites), data = Exp_design_all_2, family ="nbinom2")
+mod_abundance_day <- glmmTMB(abundance ~ AM_days_st + (1|block2/sites), data = Exp_design_all_2, family ="nbinom2", control=glmmTMBControl(optimizer=optim,
+               optArgs=list(method="BFGS")))
+mod_abundance_day_quad <- glmmTMB(abundance ~ AM_days_st + AM_days_st_quad + (1|block2/sites), data = Exp_design_all_2, family ="nbinom2")
+plot(simulateResiduals(mod_abundance_day_quad))
+
+anova_abundance <- anova(mod_abundance_null, mod_abundance_day, mod_abundance_day_quad)
+
+anova_abundance
+
+
+new_data_days <- data.frame(AM_days_st = seq(from = min(Exp_design_all_2$AM_days_st), to = max(Exp_design_all_2$AM_days_st), length.out = 100),
+                            AM_days_st_quad = seq(from = min(Exp_design_all_2$AM_days_st), to = max(Exp_design_all_2$AM_days_st), length.out = 100)^2)
+
+predicted_ab_quad <- predict(mod_abundance_day_quad, newdata = new_data_days, se.fit = TRUE, re.form = NA)
+predicted_ab_quad$upper <- exp(predicted_ab_quad$fit + predicted_ab_quad$se.fit * qnorm(0.975))
+predicted_ab_quad$lower <- exp(predicted_ab_quad$fit + predicted_ab_quad$se.fit * qnorm(0.025)) 
+predicted_ab_quad$fit <- exp(predicted_ab_quad$fit)
+
+
+```
+
+
+
+## Gamma diversity
+
+```{r}
+#Gama
+gamma <- aggregate(comm_all_2, by = list(Exp_design_all_2$AM), FUN = sum)
+
+rownames(gamma) <- gamma[,1]
+gamma <- gamma[,-1]
+
+comm_AM1 <- comm_all_2[Exp_design_all_2$AM == 1,]
+comm_AM2 <- comm_all_2[Exp_design_all_2$AM == 2,]
+comm_AM3 <- comm_all_2[Exp_design_all_2$AM == 3,]
+comm_AM4 <- comm_all_2[Exp_design_all_2$AM == 4,]
+
+comm_AM1 <- remove_sp(comm_AM1, 0)
+comm_AM2 <- remove_sp(comm_AM2, 0)
+comm_AM3 <- remove_sp(comm_AM3, 0)
+comm_AM4 <- remove_sp(comm_AM4, 0)
+
+rownames(comm_AM1) <- Exp_design$sites[Exp_design$treatments != "atrasado"]
+rownames(comm_AM2) <- Exp_design$sites[Exp_design$treatments != "atrasado"]
+rownames(comm_AM3) <- Exp_design$sites[Exp_design$treatments != "atrasado"]
+rownames(comm_AM4) <- Exp_design$sites[Exp_design$treatments != "atrasado"]
+
+com_tempos <- list(t(comm_AM1), t(comm_AM2), t(comm_AM3), t(comm_AM4))
+
+inext_coverage_0 <- iNEXTbeta3D(com_tempos, datatype = "abundance", q = 0, diversity = "TD",   base = "coverage")
+inext_coverage_0$Dataset_1$gamma
+inext_coverage_0$Dataset_2$gamma
+inext_coverage_0$Dataset_3$gamma
+inext_coverage_0$Dataset_4$gamma
+
+inext_coverage_0$Dataset_1$alpha
+inext_coverage_0$Dataset_2$alpha
+inext_coverage_0$Dataset_3$alpha
+inext_coverage_0$Dataset_4$alpha
+
+
+inext_coverage_2 <- iNEXTbeta3D(com_tempos, datatype = "abundance", q = 2, diversity = "TD",   base = "coverage")
+inext_coverage_2$Dataset_1$gamma
+inext_coverage_2$Dataset_2$gamma
+inext_coverage_2$Dataset_3$gamma
+inext_coverage_2$Dataset_4$gamma
+
+inext_coverage_4 <- iNEXTbeta3D(com_tempos, datatype = "abundance", q = 4, diversity = "TD",   base = "coverage")
+inext_coverage_4$Dataset_1$gamma
+inext_coverage_4$Dataset_2$gamma
+inext_coverage_4$Dataset_3$gamma
+inext_coverage_4$Dataset_4$gamma
+
+inext_coverage_estimated_0 <- iNEXTbeta3D(com_tempos, datatype = "abundance", q = 0, diversity = "TD",   base = "coverage", level = 0.997, nboot = 100)
+inext_coverage_estimated_0$Dataset_1$gamma
+inext_coverage_estimated_0$Dataset_2$gamma
+inext_coverage_estimated_0$Dataset_3$gamma
+inext_coverage_estimated_0$Dataset_4$gamma
+
+inext_coverage_estimated_0$Dataset_1$alpha
+inext_coverage_estimated_0$Dataset_2$alpha
+inext_coverage_estimated_0$Dataset_3$alpha
+inext_coverage_estimated_0$Dataset_4$alpha
+
+
+inext_coverage_estimated_2 <- iNEXTbeta3D(com_tempos, datatype = "abundance", q = 2, diversity = "TD",   base = "coverage", level = 0.997, nboot = 100)
+inext_coverage_estimated_2$Dataset_1$gamma
+inext_coverage_estimated_2$Dataset_2$gamma
+inext_coverage_estimated_2$Dataset_3$gamma
+inext_coverage_estimated_2$Dataset_4$gamma
+
+inext_coverage_estimated_2$Dataset_1$alpha
+inext_coverage_estimated_2$Dataset_2$alpha
+inext_coverage_estimated_2$Dataset_3$alpha
+inext_coverage_estimated_2$Dataset_4$alpha
+
+#inext_estimate <- estimate3D(com_tempos, datatype = "abundance", base = "coverage", level = 0.999, diversity = "TD")
+
+
+```
+
+
+## Plots
+
+```{r,   fig.width = 3, fig.height = 8, dpi = 600, dev.args= list(pointsize=12)}
+
+#pdf("Plots/Community structure analysis/size_alfa_gama.pdf", width = 3, height = 8, pointsize = 12)
+
+#predicted_dev <- predict(mod_dev_am_num, newdata = new_data, se.fit = TRUE, re.form = NA)
+#predicted_dev$upper <- predicted_dev$fit + predicted_dev$se.fit * 1.96
+#predicted_dev$lower <- predicted_dev$fit- predicted_dev$se.fit * 1.96 
+par(mfrow = c(3,1), xpd = NA)
+
+par(mar  = c(4,5,1,1), bty = "l")
+plot(abundance ~ jitter(AM_days_st, 1),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n",  xlim = unscale(x = c(20,170), atributes = attr_AM_days, reverse = TRUE), xaxs = "i" )#, ylim = c(-3,5),)
+
+polygon(x = c(new_data_days$AM_days_st[1:100], new_data_days$AM_days_st[100:1]),
+        y = c(predicted_ab_quad$upper[1:100], predicted_ab_quad$lower[100:1]), col = transparent("grey50", trans.val = 0.5), border = FALSE) 
+
+points(abundance ~ jitter(AM_days_st, 1), pch = 21, col= "black",bg = transparent("orchid3", trans.val = 0.5), cex = 1.25, data = Exp_design_all_2)
+lines(x = new_data_days$AM_days_st,y = predicted_ab_quad$fit, col = "black", lwd = 2)
+title(ylab = "Total abundance", cex.lab = 1.25, line= 2.25)
+axis(1, at = unscale(x = c(32,80,116,158), atributes = attr_AM_days, reverse = TRUE), labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+
+
+par(mar  = c(4,5,1,1), bty = "l")
+plot(richness ~ jitter(AM_days_st, 1),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n"
+     ,  xlim = unscale(x = c(20,170), atributes = attr_AM_days, reverse = TRUE), xaxs = "i", ylim = c(0, 10))#, ylim = c(-3,5),)
+
+#polygon(x = c(new_data$AM_numeric[1:100], new_data$AM_numeric[100:1]),
+#        y = c(predicted_dev$upper[1:100], predicted_dev$lower[100:1]), col = transparent("grey50", trans.val = 0.5), border = FALSE) 
+
+points(richness ~ jitter(AM_days_st, 1), pch = 21, col= "black",bg = transparent("darkgoldenrod3", trans.val = 0.5), cex = 1.25, data = Exp_design_all_2)
+#lines(x = new_data$AM_numeric,y = predicted_dev$fit, col = "black", lwd = 2)
+title(ylab = "Alpha diversity", cex.lab = 1.25, line= 2.25)
+axis(1, at = unscale(x = c(32,80,116,158), atributes = attr_AM_days, reverse = TRUE), labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+
+
+
+
+
+
+par(mar  = c(4,5,1,1), bty = "l")
+plot(NA, ylim = c(8,35), xlim = c(20,170), xaxt = "n",  ylab = "", xlab = "")
+Arrows(x0 = c(32,80,116,158),
+       x1 = c(32,80,116,158),
+       y0 = c(inext_coverage_estimated_0$Dataset_1$gamma$LCL,
+              inext_coverage_estimated_0$Dataset_2$gamma$LCL,
+              inext_coverage_estimated_0$Dataset_3$gamma$LCL,
+              inext_coverage_estimated_0$Dataset_4$gamma$LCL),
+       y1 = c(inext_coverage_estimated_0$Dataset_1$gamma$UCL,
+              inext_coverage_estimated_0$Dataset_2$gamma$UCL,
+              inext_coverage_estimated_0$Dataset_3$gamma$UCL,
+              inext_coverage_estimated_0$Dataset_4$gamma$UCL),
+       arr.type = "T", code = 3, lwd = 2, col = "grey40")
+points(x = c(32,80,116,158), y = c(inext_coverage_estimated_0$Dataset_1$gamma$Gamma,
+                                   inext_coverage_estimated_0$Dataset_2$gamma$Gamma,
+                                   inext_coverage_estimated_0$Dataset_3$gamma$Gamma,
+                                   inext_coverage_estimated_0$Dataset_4$gamma$Gamma), pch = 16, cex = 2)
+
+title(ylab = "Gamma diversity", cex.lab = 1.25, line= 2.25)
+axis(1, at = c(32,80,116,158), labels = c("32", "80", "116", "158"))
+
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+letters(x = 5, y = 97, "c)", cex = 1.5)
+
+#dev.off()
+
+```
+
+
+
