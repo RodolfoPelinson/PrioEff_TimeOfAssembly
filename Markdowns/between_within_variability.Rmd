@@ -1,0 +1,272 @@
+---
+title: "Between/within variability"
+author: "Rodolfo Pelinson"
+date: "2026-04-21"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, warning=FALSE, echo = FALSE, include=FALSE}
+dir<-("C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly")
+```
+
+```{r}
+
+source(paste(sep = "/",dir,"functions/null_assembly.R"))
+source(paste(sep = "/",dir,"functions/null_com_algorithm.R"))
+source(paste(sep = "/",dir,"functions/beta_deviation.R"))
+source(paste(sep = "/",dir,"functions/beta_deviation.R"))
+source(paste(sep = "/",dir,"functions/beta_deviation_siqueira_et_al_2019.R"))
+source(paste(sep = "/",dir,"functions/letters.R"))
+source(paste(sep = "/",dir,"functions/remove_sp.R"))
+
+
+```
+
+```{r, message = FALSE, warning = FALSE}
+library(vegan)
+library(glmmTMB)
+library(car)
+library(emmeans)
+library(DHARMa)
+library(yarrr)
+library(vioplot)
+```
+
+```{r,  warning=FALSE, message = FALSE}
+source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
+```
+
+## Preparing data
+
+Excluding the late treatment and preparing data
+```{r}
+comm_all_2 <- comm_all[Exp_design_all$treatments != "atrasado",]
+Exp_design_all_2 <- Exp_design_all[Exp_design_all$treatments != "atrasado",]
+
+comm_all_2 <- remove_sp(comm_all_2, 0)
+
+ncol(comm_all_2)
+
+
+nrow(comm_all_2)
+nrow(Exp_design_all_2)
+
+
+ID <-  as.factor(Exp_design_all_2$sites)
+
+AM_by_block <- interaction(as.factor(Exp_design_all_2$block), as.factor( Exp_design_all_2$AM))
+
+
+Exp_design_all_2$AM <- as.factor(Exp_design_all_2$AM)
+Exp_design_all_2$AM_numeric <- as.numeric(Exp_design_all_2$AM)
+Exp_design_all_2$AM_numeric_quad <- Exp_design_all_2$AM_numeric^2
+
+
+Exp_design_all_2$AM_days <- Exp_design_all_2$AM_numeric
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_days == 1] <- 32
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_days == 2] <- 80
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_days == 3] <- 116
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_days == 4] <- 158
+
+
+Exp_design_all_2$AM_days_orig <- Exp_design_all_2$AM_days
+
+Exp_design_all_2$AM_days <- scale(Exp_design_all_2$AM_days)
+attr_AM_days <- attributes(Exp_design_all_2$AM_days)
+
+unscale <- function(x, atributes, reverse = FALSE){
+  if(isTRUE(reverse)){
+      x <- (x - atributes$`scaled:center`) / atributes$`scaled:scale` 
+  }else{
+      x <- (x * atributes$`scaled:scale`) + atributes$`scaled:center`
+  }
+  return(x)
+}
+
+Exp_design_all_2$AM_days <- Exp_design_all_2$AM_days[,1]
+Exp_design_all_2$AM_days_quad <- Exp_design_all_2$AM_days^2
+
+```
+
+
+## Within group distances
+
+```{r}
+
+##############################################################################
+
+# Building a PCoA to retrieve distances between and within treatments
+
+distance <- vegdist(comm_all_2, method = "bray")
+
+#distance <- vegdist(mod_plot_all$best$lvs, method = "euclidean")
+
+Exp_design_all_2$treatments_AM <- interaction(Exp_design_all_2$treatments, Exp_design_all_2$AM)
+
+beta_obj <- betadisper(distance, group = Exp_design_all_2$treatments_AM)
+
+within_group_distances <- beta_obj$group.distances
+
+data_within <- data.frame(within_dist = beta_obj$distance, AM_days = Exp_design_all_2$AM_days, sites = Exp_design_all_2$sites)
+
+
+```
+
+
+
+## between groups distances
+
+```{r}
+
+cent_var <- matrix(NA, nrow = length(levels(as.factor(Exp_design_all_2$treatments_AM))), ncol = ncol(beta_obj$vectors))
+for(i in 1:ncol(beta_obj$vectors)){
+  cent_var[,i ] <- tapply(beta_obj$vectors[,i], as.factor(Exp_design_all_2$treatments_AM), median)
+}
+
+rownames(cent_var) <- levels(as.factor(Exp_design_all_2$treatments_AM))
+colnames(cent_var) <- colnames(beta_obj$vectors)
+
+New_AM <- c(rep(32, 4), rep(80, 4), rep(116, 4), rep(158, 4))
+
+New_AM <- scale(New_AM)
+attr_New_AM <- attributes(New_AM)
+New_AM <- scale(New_AM)[,1]
+
+dist_between <- vegdist(cent_var, method = "euclidean")
+
+beta_between_obj <- betadisper(dist_between, group = New_AM)
+
+treatments <- rep(c("control", "closed", "drag_exclusion", "amph_exclusion"), 4)
+
+data_between <- data.frame(between_dist = beta_between_obj$distance, AM_days = New_AM, treatments = treatments)
+
+```
+
+
+## Models
+
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+mod_beta_whitin0 <- glmmTMB(within_dist ~ 1 + (1|sites), family = "gaussian", data = data_within)
+mod_beta_whitin1 <- glmmTMB(within_dist ~ AM_days + (1|sites), family = "gaussian", data = data_within)
+mod_beta_whitin2 <- glmmTMB(within_dist ~ AM_days + I(AM_days^2) + (1|sites), family = "gaussian", data = data_within)
+plot(simulateResiduals(mod_beta_whitin2))
+anova_within <- anova(mod_beta_whitin0, mod_beta_whitin1, mod_beta_whitin2)
+anova_within
+
+
+mod_beta_between0 <- glmmTMB(between_dist ~ 1 + (1|treatments), family = "gaussian", data = data_between)
+mod_beta_between1 <- glmmTMB(between_dist ~ AM_days + (1|treatments), family = "gaussian", data = data_between)
+mod_beta_between2 <- glmmTMB(between_dist ~ AM_days + I(AM_days^2) + (1|treatments), family = "gaussian", data = data_between)
+plot(simulateResiduals(mod_beta_between2))
+anova_between <- anova(mod_beta_between0, mod_beta_between1, mod_beta_between2)
+anova_between
+
+```
+
+
+
+## Making predictions
+```{r}
+
+new_data_days_within <- data.frame(AM_days = seq(from= min(data_within$AM_days), to = max(data_within$AM_days), length.out = 100),
+                       AM_days_quad = seq(from= min(data_within$AM_days), to = max(data_within$AM_days), length.out = 100)^2)
+
+
+new_data_days_between <- data.frame(AM_days = seq(from= min(data_between$AM_days), to = max(data_between$AM_days), length.out = 100),
+                       AM_days_quad = seq(from= min(data_between$AM_days), to = max(data_between$AM_days), length.out = 100)^2)
+
+predicted_within <- predict(mod_beta_whitin1, newdata = new_data_days_within, se.fit = TRUE, re.form = NA)
+predicted_within$upper <- predicted_within$fit + predicted_within$se.fit * qnorm(0.975)
+predicted_within$lower <- predicted_within$fit + predicted_within$se.fit * qnorm(0.025) 
+
+predicted_between <- predict(mod_beta_between1, newdata = new_data_days_between, se.fit = TRUE, re.form = NA)
+predicted_between$upper <- predicted_between$fit + predicted_between$se.fit * qnorm(0.975)
+predicted_between$lower <- predicted_between$fit + predicted_between$se.fit * qnorm(0.025) 
+
+
+```
+
+
+## Plots
+
+```{r,   fig.width = 7, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+set.seed(1)
+
+par(mfrow = c(1,2))
+
+unique_AM_days_within <- unique(data_within$AM_days)
+unique_AM_days_between <- unique(data_between$AM_days)
+unique_AM_days_orig <- unique(Exp_design_all_2$AM_days_orig)
+
+
+par(mar  = c(4,5,1,1), bty = "l", new = FALSE)
+plot(data_within$within_dist ~ jitter(AM_days, 1),
+     data = data_within, xaxt = "n", ylab = "", xlab = "", type = "n", ylim = c(0.1,0.9), xlim = c(min(unique_AM_days_within)*1.25,max(unique_AM_days_within)*1.25),  xaxs = "i")
+
+polygon(x = c(new_data_days_within$AM_days[1:100], new_data_days_within$AM_days[100:1]),
+        y = c(predicted_within$upper[1:100], predicted_within$lower[100:1]), col = transparent("grey30", trans.val = 0.6), border = FALSE) 
+
+points(data_within$within_dist ~ jitter(AM_days-0.075, 0.5), pch = 21, col= "black",bg = transparent("grey30", trans.val = 0.75), cex = 1.1, data = data_within)
+
+lines(x = new_data_days_within$AM_days,y = predicted_within$fit, col = "black", lwd = 2)
+
+title(ylab = "Distance to treatment centroid", cex.lab = 1.25, line= 3)
+title(ylab = "(Within treatment variability)", cex.lab = 1, line= 2)
+
+axis(1, at = unique_AM_days_within, labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+#par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+#plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
+
+#legend(legend = c("withinerved",
+#                  "betweenected"), x = 100, y = 18, bty = "n", pch = 21, col = "black", pt.bg = c(transparent("blue", trans.val = 0.75),transparent("red", trans.val = 0.75)), xjust = 1, yjust = 0)
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+#####################################################################################################################
+
+
+
+par(mar  = c(4,5,1,1), bty = "l", new = FALSE)
+plot(data_between$between_dist ~ jitter(AM_days, 1),
+     data = data_between, xaxt = "n", ylab = "", xlab = "", type = "n", ylim = c(0.1,0.9), xlim = c(min(unique_AM_days_between)*1.25,max(unique_AM_days_between)*1.25),  xaxs = "i")
+
+polygon(x = c(new_data_days_between$AM_days[1:100], new_data_days_between$AM_days[100:1]),
+        y = c(predicted_between$upper[1:100], predicted_between$lower[100:1]), col = transparent("grey30", trans.val = 0.6), border = FALSE) 
+
+points(data_between$between_dist ~ jitter(AM_days-0.075, 0.5), pch = 21, col= "black",bg = transparent("grey30", trans.val = 0.75), cex = 1.1, data = data_between)
+
+lines(x = new_data_days_between$AM_days,y = predicted_between$fit, col = "black", lwd = 2, lty = 2)
+
+title(ylab = "Distance of treatment centroids", cex.lab = 1.25, line= 4)
+title(ylab = "to survey centroid", cex.lab = 1.25, line= 3)
+title(ylab = "(Between treatment variability)", cex.lab = 1, line= 2)
+
+
+axis(1, at = unique_AM_days_between, labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+#par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+#plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
+
+#legend(legend = c("withinerved",
+#                  "betweenected"), x = 100, y = 18, bty = "n", pch = 21, col = "black", pt.bg = c(transparent("blue", trans.val = 0.75),transparent("red", trans.val = 0.75)), xjust = 1, yjust = 0)
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+
+
+#dev.off()
+```
+
+
+
+
+
