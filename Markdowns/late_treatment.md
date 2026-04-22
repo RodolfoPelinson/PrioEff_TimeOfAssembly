@@ -1627,11 +1627,13 @@ legend(x = 100, y = 0, xjust = 1, yjust = 0, lty = c(1,1,1), lwd = 3, legend = c
        col = c( "#56B4E9", "#009E73","#D55E00"), bty = "n")
 
 letters(x = 5, y = 97, "b)", cex = 1.5)
-
-#dev.off()
 ```
 
 ![](late_treatment_files/figure-gfm/unnamed-chunk-34-1.png)<!-- -->
+
+``` r
+#dev.off()
+```
 
 # Making predictions with one big model
 
@@ -2111,6 +2113,121 @@ legend(legend = c("Control",
 ```
 
 ![](late_treatment_files/figure-gfm/unnamed-chunk-42-1.png)<!-- -->
+
+``` r
+#dev.off()
+```
+
+# Plotting coefficients
+
+``` r
+models <- list(colonization_late_control = mod_treatment_interaction_late_colonization_control,
+               colonization_late_exclusion = mod_treatment_interaction_late_colonization_exclusion,
+               experiment_late_control = mod_treatment_interaction_late_experiment_control,
+               experiment_late_exclusion = mod_treatment_interaction_late_experiment_exclusion)
+
+coefs_list <- list()
+sp_names_list <- list()
+sp_font_list <- list()
+
+for(i in 1:length(models)){
+  sp_names <- colnames(models[[i]]$coefficients)
+  sp_names <- gsub("\\.", " ", sp_names)
+
+  sp_names[sp_names == "Dendropsophus minutus"] <- "D. minutus"
+  sp_names[sp_names == "Scinax fuscovarius"] <- "S. fuscovarius"
+
+  sp_font <- rep(3, length(sp_names))
+  sp_font[sp_names == "Chironominae"] <- 1
+  sp_font[sp_names == "Tanypodinae"] <- 1
+  
+  sp_names_list[[i]] <- sp_names 
+  sp_font_list[[i]] <- sp_font 
+
+  interaction_coefs <- data.frame(t(models[[i]]$coefficients[(nrow(models[[i]]$coefficients)-1):nrow(models[[i]]$coefficients),]))
+  interaction_coefs_se <- data.frame(t(models[[i]]$stderr.coefficients[(nrow(models[[i]]$stderr.coefficients)-1):nrow(models[[i]]$stderr.coefficients),]))
+
+  interaction_upper <- interaction_coefs + (interaction_coefs_se * qnorm(0.975))
+  interaction_lower <- interaction_coefs + (interaction_coefs_se * qnorm(0.025))
+  
+  coefs_list[[i]] <- list(interaction_coefs = interaction_coefs,
+                          interaction_coefs_se = interaction_coefs_se,
+                          interaction_upper = interaction_upper,
+                          interaction_lower = interaction_lower)
+  
+}
+
+names(coefs_list) <- names(models)
+names(sp_names_list) <- names(models)
+names(sp_font_list) <- names(models)
+
+titles1 <- c("Late VS Control",
+            "Late VS Exclusion",
+            "Late VS Control",
+            "Late VS Exclusion")
+
+titles2 <- c("Colonization time",
+            "Colonization time",
+            "Experiment time",
+            "Experiment time")
+
+xlabs <- c("Time", expression(Time^2))
+
+screens <- c(2,3,4,5,7,8,9,10)
+
+#svg(filename = "Plots/Community structure analysis/community_trajectories_coefs.svg", width = 10, height = 4.5, pointsize = 12)
+
+
+close.screen(all.screens = TRUE)
+split.screen(matrix(c(0 , 0.1, 0.5, 1  ,
+                      0.1, 0.325, 0.5, 1,
+                      0.325, 0.55, 0.5, 1,
+                      0.55, 0.775, 0.5, 1,
+                      0.775, 1, 0.5, 1,
+                      0 , 0.1, 0, 0.5  ,
+                      0.1, 0.325, 0, 0.5  ,
+                      0.325, 0.55, 0, 0.5  ,
+                      0.55, 0.775, 0, 0.5  ,
+                      0.775, 1, 0, 0.5), ncol = 4, nrow = 10, byrow = TRUE))
+```
+
+    ##  [1]  1  2  3  4  5  6  7  8  9 10
+
+``` r
+scr <- 1
+
+sp_plot <- c(2,7)
+
+for(mod in 1:length(models)){
+  for(par in 1:length(coefs_list$colonization_late_control$interaction_coefs)){
+
+screen(screens[scr])
+    
+if(sp_plot[1] == screens[scr] | sp_plot[2] == screens[scr]){
+  sp_labels <- sp_names_list[[mod]]
+}else{
+  sp_labels <- FALSE
+}
+
+par(mar = c(4,2,2,0.5))
+My_coefplot(mles = coefs_list[[mod]]$interaction_coefs[[par]],
+            upper = coefs_list[[mod]]$interaction_upper[[par]],
+            lower = coefs_list[[mod]]$interaction_lower[[par]], col_sig = "red",
+            cex_sig = 1.5, species_labels = sp_labels, yaxis_font = sp_font_list[[mod]], cex.axis = 0.9,
+            xlim = c(min(coefs_list[[mod]]$interaction_coefs[[par]] * 1.6),max(coefs_list[[mod]]$interaction_coefs[[par]] * 1.6)))
+title(xlab = xlabs[par], cex.lab = 1, line = 2.5)
+title(main = titles1[mod], adj = 1, line = 0.25, cex.main = 0.9, font.main = 2)
+title(main = titles2[mod], adj = 0, line = 1, cex.main = 0.9, font.main = 2)
+
+scr <- scr+1
+
+#screen(2, new = FALSE)
+#letters(x = 12, y = 94, "a)", cex = 1.5)
+  }
+}
+```
+
+![](late_treatment_files/figure-gfm/unnamed-chunk-43-1.png)<!-- -->
 
 ``` r
 #dev.off()

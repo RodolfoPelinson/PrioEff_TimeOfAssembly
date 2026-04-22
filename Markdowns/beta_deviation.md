@@ -90,7 +90,7 @@ Exp_design_all_2$AM_days <- Exp_design_all_2$AM_days[,1]
 Exp_design_all_2$AM_days_quad <- Exp_design_all_2$AM_days^2
 ```
 
-## Computing beta deviation
+# Computing beta deviation
 
 Running the beta deviation analysis keeps gamma diversity within each
 survey fixed, total number of individuals in each sample fixed, and
@@ -101,7 +101,7 @@ beta_dev <-  beta_deviation(comm_all_2, keep_fill = TRUE, method = "quasiswap", 
                                   strata = Exp_design_all_2$AM,  mtype = "count", times = 500, burnin = 0, thin = 1000, transform = NULL, seed = 1, type = "centroid", bias.adjust = FALSE)
 ```
 
-## Checking premises
+### Checking premises
 
 Checking if null matrices are keeping the parameters that should be
 fixed, fixed.
@@ -641,7 +641,7 @@ rowSums(comm_all_2[Exp_design_all_2$AM == 4,])
 #########################################################################################################################
 ```
 
-## Analysis
+### Analysis
 
 ``` r
 mod_obs_null <- glmmTMB(beta_dev$observed_distances ~ 1 + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
@@ -788,7 +788,7 @@ plot(simulateResiduals(mod_dev_am_num_quad))
 
 ![](beta_deviation_files/figure-gfm/unnamed-chunk-13-3.png)<!-- -->
 
-## Making predictions
+### Making predictions
 
 ``` r
 new_data_days <- data.frame(AM_days = seq(from= min(Exp_design_all_2$AM_days), to = max(Exp_design_all_2$AM_days), length.out = 100),
@@ -808,7 +808,7 @@ predicted_dev$upper <- predicted_dev$fit + predicted_dev$se.fit * qnorm(0.975)
 predicted_dev$lower <- predicted_dev$fit + predicted_dev$se.fit * qnorm(0.025) 
 ```
 
-## Plots
+### Plots
 
 ``` r
 set.seed(1)
@@ -885,12 +885,13 @@ axis(1, at = unique_AM_days, labels = c("32", "80", "116", "158"))
 title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
 
 letters(x = 5, y = 97, "b)", cex = 1.5)
-
-
-#dev.off()
 ```
 
 ![](beta_deviation_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+
+``` r
+#dev.off()
+```
 
 Percentage increase in observed community variability:
 
@@ -948,3 +949,688 @@ preds <- predict(mod_dev_am_num, newdata = data.frame(AM_days = c(unscale(32, at
 
     ## eta_predict 
     ##    308.5813
+
+# Environmental variability
+
+``` r
+Env$AM_match <- rep(NA, nrow(Env))
+
+Env$AM_match[Env$amostragem == 2] <- 1
+Env$AM_match[Env$amostragem == 5] <- 2
+Env$AM_match[Env$amostragem == 7] <- 3
+Env$AM_match[Env$amostragem == 9] <- 4
+
+Env <- Env[is.na(Env$AM_match)==FALSE,]
+
+Exp_design_all_2$site_AM <- interaction(Exp_design_all_2$sites, Exp_design_all_2$AM)
+Env$site_AM <- interaction(Env$id, Env$AM_match)
+
+
+Env_2 <- Env[Env$Tratamento != "atrasado",]
+Env_2 <- Env_2[match(Exp_design_all_2$site_AM, Env_2$site_AM),]
+
+nrow(Env_2)
+```
+
+    ## [1] 96
+
+``` r
+nrow(Exp_design_all_2)
+```
+
+    ## [1] 96
+
+``` r
+only_Env <- Env_2[,c(6,7,9,10,11)]
+
+only_Env_st <- decostand(only_Env, method = "stand")
+
+dist_env <- vegdist(only_Env_st, method = "euclidean")
+
+env_var <- betadisper(dist_env, group = Env_2$AM_match)
+
+
+pca_env <- rda(only_Env_st)
+
+env_eigenvalues <- pca_env$CA$eig / sum(pca_env$CA$eig)
+env_eigenvalues
+```
+
+    ##         PC1         PC2         PC3         PC4         PC5 
+    ## 0.450378473 0.296214409 0.215893071 0.029516896 0.007997152
+
+``` r
+env_PCs <- pca_env$CA$u
+
+pca_env$CA$v
+```
+
+    ##                     PC1        PC2        PC3         PC4         PC5
+    ## pH            0.3708232  0.5790498  0.3538963 -0.62828629  0.08488367
+    ## OD            0.1874022 -0.2302452  0.8715313  0.39020211  0.00656506
+    ## Condutividade 0.5715676 -0.3628726 -0.2139811 -0.02253199  0.70380276
+    ## Temperatura   0.3912960  0.6037103 -0.2185204  0.65724866 -0.05190700
+    ## TDS           0.5895494 -0.3399203 -0.1471447 -0.14323113 -0.70336264
+
+First PC is basically related to conductivity and total dissolved solids
+Second PC is basically related to temperature and pH Third PC is
+basically related to dissolved oxygen
+
+Effect of time on environmental variability
+
+``` r
+mod_env_null <- glmmTMB(env_var$distances ~ 1 + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(env_var$distances ~ 1 + (1 | block2/sites), data =
+    ## Exp_design_all_2, : use of the '$' operator in formulas is not recommended
+
+``` r
+mod_env_am_num <- glmmTMB(env_var$distances ~ AM_days + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(env_var$distances ~ AM_days + (1 | block2/sites), data =
+    ## Exp_design_all_2, : use of the '$' operator in formulas is not recommended
+
+``` r
+mod_env_am_num_quad <- glmmTMB(env_var$distances ~ AM_days + AM_days_quad + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(env_var$distances ~ AM_days + AM_days_quad + (1 |
+    ## block2/sites), : use of the '$' operator in formulas is not recommended
+
+``` r
+plot(simulateResiduals(mod_env_am_num_quad))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+``` r
+anova_env <- anova(mod_env_null, mod_env_am_num, mod_env_am_num_quad)
+anova_env
+```
+
+    ## Data: Exp_design_all_2
+    ## Models:
+    ## mod_env_null: env_var$distances ~ 1 + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_env_am_num: env_var$distances ~ AM_days + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_env_am_num_quad: env_var$distances ~ AM_days + AM_days_quad + (1 | block2/sites), zi=~0, disp=~1
+    ##                     Df    AIC    BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)
+    ## mod_env_null         4 178.95 189.20 -85.473   170.95                         
+    ## mod_env_am_num       5 180.93 193.75 -85.463   170.93 0.0199      1     0.8878
+    ## mod_env_am_num_quad  6 182.91 198.29 -85.454   170.91 0.0190      1     0.8904
+
+Effect of environmental variability on observed community variability
+
+``` r
+Exp_design_all_2$env_var <- env_var$distances
+
+mod_obs_am_num <- glmmTMB(beta_dev$observed_distances ~ AM_days + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(beta_dev$observed_distances ~ AM_days + (1 | block2/sites),
+    ## : use of the '$' operator in formulas is not recommended
+
+``` r
+mod_obs_am_num_env <- glmmTMB(beta_dev$observed_distances ~ AM_days + env_var + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(beta_dev$observed_distances ~ AM_days + env_var + (1 | : use
+    ## of the '$' operator in formulas is not recommended
+
+``` r
+plot(simulateResiduals(mod_obs_am_num_env))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-23-1.png)<!-- -->
+
+``` r
+anova(mod_obs_am_num, mod_obs_am_num_env)
+```
+
+    ## Data: Exp_design_all_2
+    ## Models:
+    ## mod_obs_am_num: beta_dev$observed_distances ~ AM_days + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_obs_am_num_env: beta_dev$observed_distances ~ AM_days + env_var + (1 | block2/sites), zi=~0, disp=~1
+    ##                    Df     AIC     BIC logLik deviance  Chisq Chi Df Pr(>Chisq)
+    ## mod_obs_am_num      5 -109.70 -96.882 59.852  -119.70                         
+    ## mod_obs_am_num_env  6 -109.47 -94.080 60.733  -121.47 1.7623      1     0.1843
+
+``` r
+mod_obs_env_pcs <- glmmTMB(beta_dev$observed_distances ~ AM_days + (1|block2/sites) + 
+                            env_PCs[,1] +
+                            env_PCs[,2] + 
+                            env_PCs[,3], data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(beta_dev$observed_distances ~ AM_days + (1 | block2/sites) +
+    ## : use of the '$' operator in formulas is not recommended
+
+    ## Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence
+    ## problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+
+``` r
+Anova(mod_obs_env_pcs)
+```
+
+    ## Analysis of Deviance Table (Type II Wald chisquare tests)
+    ## 
+    ## Response: beta_dev$observed_distances
+    ##               Chisq Df Pr(>Chisq)  
+    ## AM_days      4.5912  1    0.03214 *
+    ## env_PCs[, 1] 0.5688  1    0.45072  
+    ## env_PCs[, 2] 1.1694  1    0.27953  
+    ## env_PCs[, 3] 3.3768  1    0.06612 .
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Effect of environmental variability on beta deviation
+
+``` r
+Exp_design_all_2$env_var <- env_var$distances
+
+mod_dev_am_num <- glmmTMB(beta_dev$deviation_distances ~ AM_days + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(beta_dev$deviation_distances ~ AM_days + (1 | block2/sites),
+    ## : use of the '$' operator in formulas is not recommended
+
+``` r
+mod_dev_am_num_env <- glmmTMB(beta_dev$deviation_distances ~ AM_days + env_var + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(beta_dev$deviation_distances ~ AM_days + env_var + (1 | :
+    ## use of the '$' operator in formulas is not recommended
+
+``` r
+plot(simulateResiduals(mod_dev_am_num_env))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-24-1.png)<!-- -->
+
+``` r
+anova(mod_dev_am_num, mod_dev_am_num_env)
+```
+
+    ## Data: Exp_design_all_2
+    ## Models:
+    ## mod_dev_am_num: beta_dev$deviation_distances ~ AM_days + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_dev_am_num_env: beta_dev$deviation_distances ~ AM_days + env_var + (1 | block2/sites), zi=~0, disp=~1
+    ##                    Df    AIC   BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)
+    ## mod_dev_am_num      5 352.18 365.0 -171.09   342.18                         
+    ## mod_dev_am_num_env  6 353.52 368.9 -170.76   341.52 0.6639      1     0.4152
+
+Now environmental mean
+
+``` r
+mod_env1_pcs_null <- glmmTMB(env_PCs[,1] ~ 1 + (1|block2/sites), data = Exp_design_all_2)
+mod_env1_pcs_lin <- glmmTMB(env_PCs[,1] ~ AM_days + (1|block2/sites), data = Exp_design_all_2)
+mod_env1_pcs_quad <- glmmTMB(env_PCs[,1] ~ AM_days + AM_days_quad + (1|block2/sites), data = Exp_design_all_2)
+
+plot(simulateResiduals(mod_env1_pcs_quad))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-25-1.png)<!-- -->
+
+``` r
+anova(mod_env1_pcs_null, mod_env1_pcs_lin, mod_env1_pcs_quad)
+```
+
+    ## Data: Exp_design_all_2
+    ## Models:
+    ## mod_env1_pcs_null: env_PCs[, 1] ~ 1 + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_env1_pcs_lin: env_PCs[, 1] ~ AM_days + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_env1_pcs_quad: env_PCs[, 1] ~ AM_days + AM_days_quad + (1 | block2/sites), zi=~0, disp=~1
+    ##                   Df     AIC     BIC  logLik deviance    Chisq Chi Df
+    ## mod_env1_pcs_null  4 -157.74 -147.48  82.871  -165.74                
+    ## mod_env1_pcs_lin   5 -299.75 -286.93 154.874  -309.75 144.0070      1
+    ## mod_env1_pcs_quad  6 -299.12 -283.74 155.561  -311.12   1.3741      1
+    ##                   Pr(>Chisq)    
+    ## mod_env1_pcs_null               
+    ## mod_env1_pcs_lin      <2e-16 ***
+    ## mod_env1_pcs_quad     0.2411    
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+Exp_design_all_2$AM_days_third <- Exp_design_all_2$AM_days^3
+
+mod_env2_pcs_null <- glmmTMB(env_PCs[,2] ~ 1 + (1|block2/sites), data = Exp_design_all_2)
+```
+
+    ## Warning in finalizeTMB(TMBStruc, obj, fit, h, data.tmb.old): Model convergence
+    ## problem; non-positive-definite Hessian matrix. See vignette('troubleshooting')
+
+``` r
+mod_env2_pcs_lin <- glmmTMB(env_PCs[,2] ~ AM_days + (1|block2/sites), data = Exp_design_all_2)
+mod_env2_pcs_quad <- glmmTMB(env_PCs[,2] ~ AM_days + AM_days_quad + (1|block2/sites), data = Exp_design_all_2)
+mod_env2_pcs_third <- glmmTMB(env_PCs[,2] ~ AM_days + AM_days_quad + AM_days_third + (1|block2/sites), data = Exp_design_all_2)
+
+plot(simulateResiduals(mod_env2_pcs_third))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-26-1.png)<!-- -->
+
+``` r
+anova(mod_env2_pcs_null, mod_env2_pcs_lin, mod_env2_pcs_quad ,mod_env2_pcs_third)
+```
+
+    ## Data: Exp_design_all_2
+    ## Models:
+    ## mod_env2_pcs_null: env_PCs[, 2] ~ 1 + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_env2_pcs_lin: env_PCs[, 2] ~ AM_days + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_env2_pcs_quad: env_PCs[, 2] ~ AM_days + AM_days_quad + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_env2_pcs_third: env_PCs[, 2] ~ AM_days + AM_days_quad + AM_days_third + (1 | , zi=~0, disp=~1
+    ## mod_env2_pcs_third:     block2/sites), zi=~0, disp=~1
+    ##                    Df     AIC     BIC  logLik deviance  Chisq Chi Df Pr(>Chisq)
+    ## mod_env2_pcs_null   4                                                          
+    ## mod_env2_pcs_lin    5 -155.74 -142.92  82.871  -165.74             1           
+    ## mod_env2_pcs_quad   6 -193.93 -178.55 102.966  -205.93  40.19      1  2.305e-10
+    ## mod_env2_pcs_third  7 -391.16 -373.21 202.578  -405.16 199.22      1  < 2.2e-16
+    ##                       
+    ## mod_env2_pcs_null     
+    ## mod_env2_pcs_lin      
+    ## mod_env2_pcs_quad  ***
+    ## mod_env2_pcs_third ***
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+mod_env3_pcs_null <- glmmTMB(env_PCs[,3] ~ 1 + (1|block2/sites), data = Exp_design_all_2)
+mod_env3_pcs_lin <- glmmTMB(env_PCs[,3] ~ AM_days + (1|block2/sites), data = Exp_design_all_2)
+mod_env3_pcs_quad <- glmmTMB(env_PCs[,3] ~ AM_days + AM_days_quad + (1|block2/sites), data = Exp_design_all_2)
+
+plot(simulateResiduals(mod_env3_pcs_quad))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-27-1.png)<!-- -->
+
+``` r
+anova(mod_env3_pcs_null, mod_env3_pcs_lin, mod_env3_pcs_quad)
+```
+
+    ## Data: Exp_design_all_2
+    ## Models:
+    ## mod_env3_pcs_null: env_PCs[, 3] ~ 1 + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_env3_pcs_lin: env_PCs[, 3] ~ AM_days + (1 | block2/sites), zi=~0, disp=~1
+    ## mod_env3_pcs_quad: env_PCs[, 3] ~ AM_days + AM_days_quad + (1 | block2/sites), zi=~0, disp=~1
+    ##                   Df     AIC     BIC logLik deviance  Chisq Chi Df Pr(>Chisq)
+    ## mod_env3_pcs_null  4 -158.02 -147.77 83.012  -166.02                         
+    ## mod_env3_pcs_lin   5 -163.92 -151.10 86.960  -173.92 7.8951      1   0.004957
+    ## mod_env3_pcs_quad  6 -165.95 -150.56 88.974  -177.95 4.0286      1   0.044734
+    ##                     
+    ## mod_env3_pcs_null   
+    ## mod_env3_pcs_lin  **
+    ## mod_env3_pcs_quad * 
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+Basically all environmental predictors very throughout time. We took the
+residual of such models e checked if those residuals can explain
+community variability alongside with time.
+
+``` r
+Exp_design_all_2$resid_PC3 <- residuals(mod_env3_pcs_quad)
+Exp_design_all_2$resid_PC2 <- residuals(mod_env2_pcs_quad)
+Exp_design_all_2$resid_PC1 <- residuals(mod_env1_pcs_lin)
+
+
+mod_obs_env_pcs <- glmmTMB(beta_dev$observed_distances ~ (1|block2/sites) + AM_days +
+                            resid_PC1 +
+                            resid_PC2 + 
+                            resid_PC3, data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(beta_dev$observed_distances ~ (1 | block2/sites) + AM_days +
+    ## : use of the '$' operator in formulas is not recommended
+
+``` r
+plot(simulateResiduals(mod_obs_env_pcs))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-28-1.png)<!-- -->
+
+``` r
+Anova(mod_obs_env_pcs)
+```
+
+    ## Analysis of Deviance Table (Type II Wald chisquare tests)
+    ## 
+    ## Response: beta_dev$observed_distances
+    ##             Chisq Df Pr(>Chisq)   
+    ## AM_days   10.4686  1   0.001214 **
+    ## resid_PC1  0.5953  1   0.440373   
+    ## resid_PC2  0.3490  1   0.554666   
+    ## resid_PC3  2.9555  1   0.085583 . 
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+mod_exp_env_pcs <- glmmTMB(beta_dev$expected_distances ~ (1|block2/sites) + poly(AM_days, degree = 2) +
+                            resid_PC1 +
+                            resid_PC2 + 
+                            resid_PC3, data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+```
+
+    ## Warning in glmmTMB(beta_dev$expected_distances ~ (1 | block2/sites) +
+    ## poly(AM_days, : use of the '$' operator in formulas is not recommended
+
+``` r
+plot(simulateResiduals(mod_exp_env_pcs))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-28-2.png)<!-- -->
+
+``` r
+Anova(mod_exp_env_pcs)
+```
+
+    ## Analysis of Deviance Table (Type II Wald chisquare tests)
+    ## 
+    ## Response: beta_dev$expected_distances
+    ##                             Chisq Df Pr(>Chisq)   
+    ## poly(AM_days, degree = 2) 10.1923  2    0.00612 **
+    ## resid_PC1                  1.0905  1    0.29635   
+    ## resid_PC2                  4.2329  1    0.03965 * 
+    ## resid_PC3                  0.1832  1    0.66867   
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+``` r
+mod_dev_env_pcs <- glmmTMB(beta_dev$deviation_distances ~ (1|block2/sites) + AM_days +
+                            resid_PC1 +
+                            resid_PC2 + 
+                            resid_PC3, data = Exp_design_all_2)
+```
+
+    ## Warning in glmmTMB(beta_dev$deviation_distances ~ (1 | block2/sites) + AM_days
+    ## + : use of the '$' operator in formulas is not recommended
+
+``` r
+plot(simulateResiduals(mod_dev_env_pcs))
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-28-3.png)<!-- -->
+
+``` r
+Anova(mod_dev_env_pcs)
+```
+
+    ## Analysis of Deviance Table (Type II Wald chisquare tests)
+    ## 
+    ## Response: beta_dev$deviation_distances
+    ##             Chisq Df Pr(>Chisq)    
+    ## AM_days   13.7256  1  0.0002116 ***
+    ## resid_PC1  0.8362  1  0.3604920    
+    ## resid_PC2  0.3423  1  0.5585260    
+    ## resid_PC3  6.3311  1  0.0118642 *  
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+
+### Making predictons
+
+``` r
+new_data_days$AM_days_third <- new_data_days$AM_days^3
+
+predicted_env_PC1_time <- predict(mod_env1_pcs_lin, newdata = new_data_days, se.fit = TRUE, re.form = NA)
+predicted_env_PC1_time$upper <- predicted_env_PC1_time$fit + predicted_env_PC1_time$se.fit * qnorm(0.975)
+predicted_env_PC1_time$lower <- predicted_env_PC1_time$fit + predicted_env_PC1_time$se.fit * qnorm(0.025) 
+
+predicted_env_PC2_time <- predict(mod_env2_pcs_third, newdata = new_data_days, se.fit = TRUE, re.form = NA)
+predicted_env_PC2_time$upper <- predicted_env_PC2_time$fit + predicted_env_PC2_time$se.fit * qnorm(0.975)
+predicted_env_PC2_time$lower <- predicted_env_PC2_time$fit + predicted_env_PC2_time$se.fit * qnorm(0.025) 
+
+predicted_env_PC3_time <- predict(mod_env3_pcs_quad, newdata = new_data_days, se.fit = TRUE, re.form = NA)
+predicted_env_PC3_time$upper <- predicted_env_PC3_time$fit + predicted_env_PC3_time$se.fit * qnorm(0.975)
+predicted_env_PC3_time$lower <- predicted_env_PC3_time$fit + predicted_env_PC3_time$se.fit * qnorm(0.025) 
+
+
+
+new_data_obs_PC3 <- new_data_days
+new_data_obs_PC3$resid_PC3 <- seq(from = min(Exp_design_all_2$resid_PC3), to = max(Exp_design_all_2$resid_PC3), length.out = nrow(new_data_obs_PC3))
+new_data_obs_PC3$resid_PC2 <- rep(median(Exp_design_all_2$resid_PC2), nrow(new_data_obs_PC3))
+new_data_obs_PC3$resid_PC1 <- rep(median(Exp_design_all_2$resid_PC1), nrow(new_data_obs_PC3))
+new_data_obs_PC3$AM_days <- rep(median(new_data_obs_PC3$AM_days), nrow(new_data_obs_PC3))
+new_data_obs_PC3$AM_days_quad <- new_data_obs_PC3$AM_days^2
+
+
+predicted_obs_PC3 <- predict(mod_obs_env_pcs, newdata = new_data_obs_PC3, se.fit =  TRUE, re.form = NA)
+predicted_obs_PC3$upper <- predicted_obs_PC3$fit + predicted_obs_PC3$se.fit * qnorm(0.975)
+predicted_obs_PC3$lower <- predicted_obs_PC3$fit + predicted_obs_PC3$se.fit * qnorm(0.025) 
+
+predicted_dev_PC3 <- predict(mod_dev_env_pcs, newdata = new_data_obs_PC3, se.fit =  TRUE, re.form = NA)
+predicted_dev_PC3$upper <- predicted_dev_PC3$fit + predicted_dev_PC3$se.fit * qnorm(0.975)
+predicted_dev_PC3$lower <- predicted_dev_PC3$fit + predicted_dev_PC3$se.fit * qnorm(0.025) 
+```
+
+### Plots
+
+#### Environmental variability VS community variability
+
+``` r
+set.seed(1)
+#svg(file = "plots/Community structure analysis/beta_deviation.svg", width = 6, height = 3, pointsize = 8)
+
+par(mfrow = c(1,2))
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(beta_dev$observed_distances ~ env_var,
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+
+points(beta_dev$observed_distances[Exp_design_all_2$AM == 1] ~ env_var, pch = 21, col= "black",bg = transparent("grey80", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 1,])
+
+points(beta_dev$observed_distances[Exp_design_all_2$AM == 2] ~ env_var, pch = 21, col= "black",bg = transparent("grey50", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 2,])
+
+points(beta_dev$observed_distances[Exp_design_all_2$AM == 3] ~ env_var, pch = 21, col= "black",bg = transparent("grey20", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 3,])
+
+points(beta_dev$observed_distances[Exp_design_all_2$AM == 4] ~ env_var, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 4,])
+
+title(ylab = "Observed community variability", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Environmental variability", cex.lab = 1.25 ,line = 2.25)
+
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
+
+legend(legend = c("32 days",
+                  "80 days",
+                  "116 days",
+                  "158 days"), x = 100, y = 100, bty = "n", pch = 21, col = "black", pt.bg = c(transparent("grey80", trans.val = 0.6),
+                                                                                              transparent("grey50", trans.val = 0.6),
+                                                                                              transparent("grey20", trans.val = 0.6),
+                                                                                              transparent("black", trans.val = 0.6)), xjust = 1, yjust = 1)
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+#####################################################################################################################
+
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(beta_dev$deviation_distances ~ env_var,
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+
+points(beta_dev$deviation_distances[Exp_design_all_2$AM == 1] ~ env_var, pch = 21, col= "black",bg = transparent("grey80", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 1,])
+
+points(beta_dev$deviation_distances[Exp_design_all_2$AM == 2] ~ env_var, pch = 21, col= "black",bg = transparent("grey50", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 2,])
+
+points(beta_dev$deviation_distances[Exp_design_all_2$AM == 3] ~ env_var, pch = 21, col= "black",bg = transparent("grey20", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 3,])
+
+points(beta_dev$deviation_distances[Exp_design_all_2$AM == 4] ~ env_var, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 4,])
+
+title(ylab = "Beta deviation", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Environmental variability", cex.lab = 1.25 ,line = 2.25)
+
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-30-1.png)<!-- -->
+
+``` r
+#dev.off()
+```
+
+#### Environmental parameters VS time
+
+``` r
+set.seed(1)
+#svg(file = "plots/Community structure analysis/beta_deviation.svg", width = 6, height = 3, pointsize = 8)
+
+par(mfrow = c(3,1))
+
+unique_AM_days <- unique(Exp_design_all_2$AM_days)
+unique_AM_days_orig <- unique(Exp_design_all_2$AM_days_orig)
+
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(env_PCs[,1] ~ jitter(AM_days, 1),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n", xlim = c(min(unique_AM_days)*1.25,max(unique_AM_days)*1.25),  xaxs = "i")
+
+polygon(x = c(new_data_days$AM_days[1:100], new_data_days$AM_days[100:1]),
+        y = c(predicted_env_PC1_time$upper[1:100], predicted_env_PC1_time$lower[100:1]), col = transparent("blue", trans.val = 0.6), border = FALSE) 
+
+points(env_PCs[,1] ~ jitter(AM_days, 0.5), pch = 21, col= "black",bg = transparent("blue", trans.val = 0.75), cex = 1.1, data = Exp_design_all_2)
+
+lines(x = new_data_days$AM_days,y = predicted_env_PC1_time$fit, col = "black", lwd = 2)
+
+title(ylab = "Environment PC1", cex.lab = 1, line= 3)
+title(ylab = "(Conductivity and total dissolved solids)", cex.lab = 1, line= 2)
+
+axis(1, at = unique_AM_days, labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+##############################################################################################
+
+
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(env_PCs[,2] ~ jitter(AM_days, 1),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n", xlim = c(min(unique_AM_days)*1.25,max(unique_AM_days)*1.25),  xaxs = "i")
+
+polygon(x = c(new_data_days$AM_days[1:100], new_data_days$AM_days[100:1]),
+        y = c(predicted_env_PC2_time$upper[1:100], predicted_env_PC2_time$lower[100:1]), col = transparent("blue", trans.val = 0.6), border = FALSE) 
+
+points(env_PCs[,2] ~ jitter(AM_days, 0.5), pch = 21, col= "black",bg = transparent("blue", trans.val = 0.75), cex = 1.1, data = Exp_design_all_2)
+
+lines(x = new_data_days$AM_days,y = predicted_env_PC2_time$fit, col = "black", lwd = 2)
+
+title(ylab = "Environment PC2", cex.lab = 1, line= 3)
+title(ylab = "(Temperature and pH)", cex.lab = 1, line= 2)
+
+axis(1, at = unique_AM_days, labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+
+
+
+##############################################################################################
+
+
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(env_PCs[,3] ~ jitter(AM_days, 1),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n", xlim = c(min(unique_AM_days)*1.25,max(unique_AM_days)*1.25),  xaxs = "i")
+
+polygon(x = c(new_data_days$AM_days[1:100], new_data_days$AM_days[100:1]),
+        y = c(predicted_env_PC3_time$upper[1:100], predicted_env_PC3_time$lower[100:1]), col = transparent("blue", trans.val = 0.6), border = FALSE) 
+
+points(env_PCs[,3] ~ jitter(AM_days, 0.5), pch = 21, col= "black",bg = transparent("blue", trans.val = 0.75), cex = 1.1, data = Exp_design_all_2)
+
+lines(x = new_data_days$AM_days,y = predicted_env_PC3_time$fit, col = "black", lwd = 2)
+
+title(ylab = "Environment PC3", cex.lab = 1, line= 3)
+title(ylab = "(Dissolved oxygen)", cex.lab = 1, line= 2)
+
+axis(1, at = unique_AM_days, labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+letters(x = 5, y = 97, "c)", cex = 1.5)
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-31-1.png)<!-- -->
+
+#### Environmental parameters VS community variability
+
+``` r
+set.seed(1)
+#svg(file = "plots/Community structure analysis/beta_deviation.svg", width = 6, height = 3, pointsize = 8)
+
+par(mfrow = c(1,2))
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(beta_dev$observed_distances ~ resid_PC3,
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+polygon(x = c(new_data_obs_PC3$resid_PC3[1:100], new_data_obs_PC3$resid_PC3[100:1]),
+        y = c(predicted_obs_PC3$upper[1:100], predicted_obs_PC3$lower[100:1]), col = transparent("grey20", trans.val = 0.6), border = FALSE) 
+
+points(beta_dev$observed_distances[Exp_design_all_2$AM == 1] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey80", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 1,])
+
+points(beta_dev$observed_distances[Exp_design_all_2$AM == 2] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey50", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 2,])
+
+points(beta_dev$observed_distances[Exp_design_all_2$AM == 3] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey20", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 3,])
+
+points(beta_dev$observed_distances[Exp_design_all_2$AM == 4] ~ resid_PC3, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 4,])
+
+lines(x = new_data_obs_PC3$resid_PC3,y = predicted_obs_PC3$fit, col = "black", lwd = 2, lty = 2)
+
+
+title(ylab = "Observed community variability", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Residuals of environmental PC3", cex.lab = 1 ,line = 2)
+title(xlab = "(Dissolved oxygen without temporal effects)", cex.lab = 0.9 ,line = 3)
+
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+#####################################################################################################################
+
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(beta_dev$deviation_distances ~ resid_PC3,
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+polygon(x = c(new_data_obs_PC3$resid_PC3[1:100], new_data_obs_PC3$resid_PC3[100:1]),
+        y = c(predicted_dev_PC3$upper[1:100], predicted_dev_PC3$lower[100:1]), col = transparent("grey20", trans.val = 0.6), border = FALSE) 
+
+points(beta_dev$deviation_distances[Exp_design_all_2$AM == 1] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey80", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 1,])
+
+points(beta_dev$deviation_distances[Exp_design_all_2$AM == 2] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey50", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 2,])
+
+points(beta_dev$deviation_distances[Exp_design_all_2$AM == 3] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey20", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 3,])
+
+points(beta_dev$deviation_distances[Exp_design_all_2$AM == 4] ~ resid_PC3, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 4,])
+
+lines(x = new_data_obs_PC3$resid_PC3,y = predicted_dev_PC3$fit, col = "black", lwd = 2, lty = 1)
+
+
+title(ylab = "Beta deviation", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Residuals of environmental PC3", cex.lab = 1 ,line = 2)
+title(xlab = "(Dissolved oxygen without temporal effects)", cex.lab = 0.9 ,line = 3)
+
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
+
+legend(legend = c("32 days",
+                  "80 days",
+                  "116 days",
+                  "158 days"), x = 100, y = 100, bty = "n", pch = 21, col = "black", pt.bg = c(transparent("grey80", trans.val = 0.6),
+                                                                                              transparent("grey50", trans.val = 0.6),
+                                                                                              transparent("grey20", trans.val = 0.6),
+                                                                                              transparent("black", trans.val = 0.6)), xjust = 1, yjust = 1)
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+```
+
+![](beta_deviation_files/figure-gfm/unnamed-chunk-32-1.png)<!-- -->
+
+``` r
+#dev.off()
+```
