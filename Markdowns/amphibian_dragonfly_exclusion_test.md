@@ -149,6 +149,36 @@ text("b)", x = -2, y = 95, cex = 2, font = 2, adj = c(0,0))
 #dev.off()
 ```
 
+``` r
+means_AM1 <- tapply(amphibians_AM1, INDEX = Exp_design_exc_atr$exclusao_anfibio, FUN = mean)
+means_AM1
+```
+
+    ##      nao      sim 
+    ## 65.25000 17.91667
+
+``` r
+1 - (means_AM1[2] / means_AM1[1])
+```
+
+    ##       sim 
+    ## 0.7254151
+
+``` r
+means_AM2 <- tapply(amphibians_AM2, INDEX = Exp_design_exc_atr$exclusao_anfibio, FUN = mean)
+means_AM2
+```
+
+    ##       nao       sim 
+    ## 39.416667  7.083333
+
+``` r
+1 - (means_AM2[2] / means_AM2[1])
+```
+
+    ##      sim 
+    ## 0.820296
+
 # Analysis of draggonfly exclusion
 
 Here we built models for the second (80-day) and third (116 day) surveys
@@ -261,7 +291,7 @@ mod_exc_lib_AM2_1 <- glmmTMB::glmmTMB(dragonfly_AM2 ~ exclusao_libelula + block2
 plot(simulateResiduals(mod_exc_lib_AM2_1))
 ```
 
-![](amphibian_dragonfly_exclusion_test_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](amphibian_dragonfly_exclusion_test_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 ``` r
 anova(mod_exc_lib_AM2_0,mod_exc_lib_AM2_1)
@@ -283,7 +313,7 @@ mod_exc_lib_AM3_1 <- glmmTMB::glmmTMB(dragonfly_AM3 ~ exclusao_libelula + block2
 plot(simulateResiduals(mod_exc_lib_AM2_1))
 ```
 
-![](amphibian_dragonfly_exclusion_test_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](amphibian_dragonfly_exclusion_test_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
 
 ``` r
 anova(mod_exc_lib_AM3_0,mod_exc_lib_AM3_1)
@@ -323,8 +353,38 @@ plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
 text("b)", x = -2, y = 95, cex = 2, font = 2, adj = c(0,0))
 ```
 
-![](amphibian_dragonfly_exclusion_test_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](amphibian_dragonfly_exclusion_test_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
 
 ``` r
 #dev.off()
 ```
+
+``` r
+means_AM2 <- tapply(dragonfly_AM2, INDEX = Exp_design_exc_atr$exclusao_libelula, FUN = mean)
+means_AM2
+```
+
+    ##      nao      sim 
+    ## 2.166667 1.333333
+
+``` r
+1 - (means_AM2[2] / means_AM2[1])
+```
+
+    ##       sim 
+    ## 0.3846154
+
+``` r
+means_AM3 <- tapply(dragonfly_AM3, INDEX = Exp_design_exc_atr$exclusao_libelula, FUN = mean)
+means_AM3
+```
+
+    ##       nao       sim 
+    ## 1.7500000 0.5833333
+
+``` r
+1 - (means_AM3[2] / means_AM3[1])
+```
+
+    ##       sim 
+    ## 0.6666667

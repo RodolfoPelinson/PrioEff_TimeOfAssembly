@@ -135,6 +135,18 @@ text("b)", x = -2, y = 95, cex = 2, font = 2, adj = c(0,0))
 ```
 
 
+```{r}
+means_AM1 <- tapply(amphibians_AM1, INDEX = Exp_design_exc_atr$exclusao_anfibio, FUN = mean)
+means_AM1
+1 - (means_AM1[2] / means_AM1[1])
+
+
+means_AM2 <- tapply(amphibians_AM2, INDEX = Exp_design_exc_atr$exclusao_anfibio, FUN = mean)
+means_AM2
+1 - (means_AM2[2] / means_AM2[1])
+
+```
+
 
 # Analysis of draggonfly exclusion
 
@@ -208,4 +220,15 @@ text("b)", x = -2, y = 95, cex = 2, font = 2, adj = c(0,0))
 #dev.off()
 ```
 
+
+
+```{r}
+means_AM2 <- tapply(dragonfly_AM2, INDEX = Exp_design_exc_atr$exclusao_libelula, FUN = mean)
+means_AM2
+1 - (means_AM2[2] / means_AM2[1])
+
+means_AM3 <- tapply(dragonfly_AM3, INDEX = Exp_design_exc_atr$exclusao_libelula, FUN = mean)
+means_AM3
+1 - (means_AM3[2] / means_AM3[1])
+```
 
