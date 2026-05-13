@@ -910,6 +910,9 @@ letters(x = 10, y = 97, "b)", cex = 1.5)
 nrow(predictors_nmds)
 nrow(comm_all_drop_atrasado_rm)
 
+#comm_all_drop_atrasado_rm2 <- comm_all_drop_atrasado_rm[,colnames(comm_all_drop_atrasado_rm) != "Microvelia"]
+
+
 set.seed(3)
 control <- permute::how(within = permute::Within(type = 'free'),
                         plots = Plots(strata = predictors_nmds$sites, type = 'free'),
@@ -1162,9 +1165,6 @@ fechado_noite[,,3] <- EF_fechado_noite
 
 fechado_noite_mean <- as.data.frame(apply(fechado_noite, MARGIN = c(1,2), FUN = mean))
 colnames(fechado_noite_mean) <- colnames(AB_fechado_noite)
-fechado_noite_mean
-
-
 
 
 
@@ -1261,7 +1261,7 @@ screen(12)
 par(mar = c(0.1,0.1,0.1,0.1), bty = "n")
 plot(NA, xlim = c(0, 100), ylim = c(0, 100), xaxt = "n", yaxt = "n", xlab = "", ylab = "")
 legend(legend = c("Control",
-                 "Closed",
+                 "Both excl.",
                   "Dragonfly excl.",
                   "Amphibian excl."), x = 50, y = 50, bty = "n", lty = 1, lwd = 3, col = c("#56B4E9", "#009E73","#CC79A7","#E69F00"), xjust = 0.5, yjust = 0.5)
 
@@ -1279,18 +1279,19 @@ legend(legend = c("Control",
 
 
 
-
-
-
 ```{r}
 
 comm_trajectories <- rbind(control_mean, fechado_mean, fechado_dia_mean, fechado_noite_mean)
 
 comm_trajectories_relative <- decostand(comm_trajectories, method = "total", MARGIN = 2)
 
-set.seed(5); nmds_comm_trajectories <- metaMDS(comm_trajectories_relative, distance = "bray", k = 2, trymax  = 100, try = 50)
+#comm_trajectories_relative <- comm_trajectories_relative[,colnames(comm_trajectories_relative) != "Microvelia"]
 
-nmds_comm_trajectories
+set.seed(5); nmds_comm_trajectories <- metaMDS(comm_trajectories_relative, distance = "bray", k = 2, trymax  = 100, try = 50, engine = "monoMDS")
+
+
+
+
 ```
 
 
@@ -1519,14 +1520,16 @@ title(ylab = "nMDS 2", line = 3, cex.lab = 1.2)
 #letters(x = 10, y = 97, "b)", cex = 1.5)
 
 
-#par(new = TRUE)
-#plot(NA, xlim = c(0, 100), ylim = c(0, 100), xlab = "", ylab = "", xaxt = "n", yaxt = "n", bty = "n")
+par(new = TRUE)
+plot(NA, xlim = c(0, 100), ylim = c(0, 100), xlab = "", ylab = "", xaxt = "n", yaxt = "n", bty = "n")
 
-#legend(x = 100, y = 100, xjust = 1, yjust = 1, lty = c(1,1,1), lwd = 3, legend = c("Control", "Closed", "Late"), col = c("#009E73", "#56B4E9","#D55E00"), bty = "n")
+legend(legend = c("Control",
+                 "Both excl.",
+                  "Dragonfly excl.",
+                  "Amphibian excl."), x = 0, y = 0, bty = "n", lty = 1, lwd = 3, col = c("#56B4E9", "#009E73","#CC79A7","#E69F00"), xjust = 0, yjust = 0)
 
 #dev.off()
 
 
 ```
-
 
