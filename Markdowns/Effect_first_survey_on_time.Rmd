@@ -141,6 +141,7 @@ permutations <- shuffleSet(nrow(comm_all_drop_atrasado_rm), control = control)
 
 comm_all_drop_atrasado_mvabund <- mvabund(comm_all_drop_atrasado_rm)
 
+
 mod_full_lin <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + ( MDS1 + MDS2 ) + AM_days_sc + AM_days_sc:( MDS1 + MDS2 ), family="negative.binomial",  data = predictors_nmds, composition = FALSE)
 
 mod_full_quad <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + ( MDS1 + MDS2 ) + AM_days_sc + AM_days_sc_squared + AM_days_sc:( MDS1 + MDS2 ) + AM_days_sc_squared:( MDS1 + MDS2 ), family="negative.binomial",  data = predictors_nmds, composition = FALSE)
@@ -208,6 +209,10 @@ coefs <- coefs[, colSums(coefs, na.rm = TRUE) != 0]
 ### Making predictions for plotting
 
 ```{r}
+comm_all_drop_atrasado_mvabund2 <- comm_all_drop_atrasado_mvabund + 0.001
+
+mod_int <- manyglm(comm_all_drop_atrasado_mvabund2 ~ block2 + ( MDS1 + MDS2 ) + AM_days_sc + AM_days_sc_squared + AM_days_sc:( MDS1 + MDS2 ) + AM_days_sc_squared:( MDS1 + MDS2 ), family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
 
 #High abundances of 
 #Aedes
@@ -914,7 +919,9 @@ permutations <- shuffleSet(nrow(comm_all_drop_atrasado_rm), control = control)
 
 comm_all_drop_atrasado_mvabund <- mvabund(comm_all_drop_atrasado_rm)
 
+
 mod_full_lin <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + treatments  + AM_days_sc + AM_days_sc:treatments, family="negative.binomial",  data = predictors_nmds, composition = FALSE)
+
 
 mod_full_quad <- manyglm(comm_all_drop_atrasado_mvabund ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = predictors_nmds, composition = FALSE)
 
@@ -983,6 +990,10 @@ anova_block
 ### Making predictions for plotting
 
 ```{r}
+
+comm_all_drop_atrasado_mvabund2 <- comm_all_drop_atrasado_mvabund + 0.001
+
+mod_int <- manyglm(comm_all_drop_atrasado_mvabund2 ~ block2 + treatments + AM_days_sc + AM_days_sc_squared + AM_days_sc:treatments + AM_days_sc_squared:treatments, family="negative.binomial",  data = predictors_nmds, composition = FALSE)
 
 #High abundances of 
 #Aedes
@@ -1277,7 +1288,7 @@ comm_trajectories <- rbind(control_mean, fechado_mean, fechado_dia_mean, fechado
 
 comm_trajectories_relative <- decostand(comm_trajectories, method = "total", MARGIN = 2)
 
-set.seed(5); nmds_comm_trajectories <- metaMDS(comm_trajectories_relative, distance = "bray", k = 2, trymax  = 100, try = 100, engine = "monoMDS", autotransform  = FALSE)
+set.seed(5); nmds_comm_trajectories <- metaMDS(comm_trajectories_relative, distance = "bray", k = 2, trymax  = 100, try = 50)
 
 nmds_comm_trajectories
 ```

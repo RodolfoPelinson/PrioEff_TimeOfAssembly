@@ -1,0 +1,211 @@
+---
+title: "Test of the exclusion of amphibians and dragonflies"
+author: "Rodolfo Pelinson"
+date: "2026-05-11"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r, warning=FALSE, echo = FALSE, include=FALSE}
+dir<-("C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly")
+```
+
+```{r,  warning=FALSE, message= FALSE}
+source(paste(sep = "/",dir,"functions/pairwise_gllvm.R"))
+source(paste(sep = "/",dir,"functions/pairwise_mvabund.R"))
+source(paste(sep = "/",dir,"functions/my.anova.gllvm.R"))
+source(paste(sep = "/",dir,"functions/My_coefplot.R"))
+source(paste(sep = "/",dir,"functions/remove_sp.R"))
+source(paste(sep = "/",dir,"functions/extract_mles.R"))
+source(paste(sep = "/",dir,"functions/my_ordiplot.R"))
+source(paste(sep = "/",dir,"functions/get_scaled_lvs.R"))
+source(paste(sep = "/",dir,"functions/text_contour.R"))
+source(paste(sep = "/",dir,"functions/letters.R"))
+
+
+library(vegan)
+library(gllvm)
+library(mvabund)
+library(DHARMa)
+library(glmmTMB)
+library(vioplot)
+library(yarrr)
+library(colorspace)
+
+```
+
+```{r,  warning=FALSE, message = FALSE}
+source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
+```
+
+
+# Preparing data
+
+
+```{r}
+
+comm_AM1 <- remove_sp(communities_AM1, 0)
+comm_AM2 <- remove_sp(communities_AM2, 0)
+comm_AM3 <- remove_sp(communities_AM3, 0)
+comm_AM4 <- remove_sp(communities_AM4, 0)
+
+Exp_design_exc_atr <- Exp_design[Exp_design$treatments != "atrasado",]
+comm_AM1_exc_atr <- comm_AM1[Exp_design$treatments != "atrasado",]
+comm_AM2_exc_atr <- comm_AM2[Exp_design$treatments != "atrasado",]
+comm_AM3_exc_atr <- comm_AM3[Exp_design$treatments != "atrasado",]
+
+
+
+
+
+```
+
+
+# Analysis of amphibian exclusion
+
+Here we built models for the first (32-day) and second (80 day) surveys to assess the effect of amphibian exclusion on the total abundance of amphibians. Here the abundance of amphibians in treatments where amphibians were or were not excluded were combined (i.e. amphibian + both amphibian and dragonfly exclusion vs control + dragonfly exclusion).
+
+```{r}
+D_minutus_AM1 <- comm_AM1_exc_atr$`Dendropsophus minutus`
+S_fuscovarius_AM1 <- comm_AM1_exc_atr$`Scinax fuscovarius`
+
+amphibians_AM1 <- D_minutus_AM1 + S_fuscovarius_AM1
+
+D_minutus_AM2 <- comm_AM2_exc_atr$`Dendropsophus minutus`
+S_fuscovarius_AM2 <- comm_AM2_exc_atr$`Scinax fuscovarius`
+
+amphibians_AM2 <- D_minutus_AM2 + S_fuscovarius_AM2
+```
+
+
+## First survey
+
+```{r,  fig.width = 10, fig.height = 5, dpi = 600}
+mod_exc_anf_AM1_0 <- glmmTMB::glmmTMB(amphibians_AM1 ~ 1 + block2, family = "nbinom1", data = Exp_design_exc_atr)
+mod_exc_anf_AM1_1 <- glmmTMB::glmmTMB(amphibians_AM1 ~ exclusao_anfibio + block2, family = "nbinom1", data = Exp_design_exc_atr)
+plot(simulateResiduals(mod_exc_anf_AM1_1))
+anova(mod_exc_anf_AM1_0,mod_exc_anf_AM1_1)
+```
+
+
+## Second survey
+
+```{r,  fig.width = 10, fig.height = 5, dpi = 600}
+
+mod_exc_anf_AM2_0 <- glmmTMB::glmmTMB(amphibians_AM2 ~ 1 + block2, family = "nbinom1", data = Exp_design_exc_atr)
+mod_exc_anf_AM2_1 <- glmmTMB::glmmTMB(amphibians_AM2 ~ exclusao_anfibio + block2, family = "nbinom1", data = Exp_design_exc_atr)
+plot(simulateResiduals(mod_exc_anf_AM2_1))
+anova(mod_exc_anf_AM2_0,mod_exc_anf_AM2_1)
+
+```
+
+
+## Plot
+
+```{r,  fig.width = 10, fig.height = 4.5, dpi = 600}
+
+#pdf(file = "Plots/test_exclusion/amphibians.pdf", width = 6, height = 3, pointsize = 8)
+par(mfrow = c(1,2))
+par(mar = c(3, 5, 0.5,0.5), bty = "l")
+boxplot(amphibians_AM1 ~ Exp_design_exc_atr$exclusao_anfibio, xaxt = "n", yaxt = "n", ylab = "", xlab ="", col = c("aquamarine3", "azure3"), ylim = c(0,220))
+axis(1, labels = c("Not excluded", "Excluded"), at = c(1,2), cex.axis = 1.25)
+axis(2, las = 1)
+title(ylab = "Amphibian abundance", cex.lab = 1.5, line = 3.5)
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
+text("a)", x = -2, y = 95, cex = 2, font = 2, adj = c(0,0))
+
+par(mar = c(3, 5, 0.5,0.5), bty = "l")
+boxplot(amphibians_AM2 ~ Exp_design_exc_atr$exclusao_anfibio, xaxt = "n", yaxt = "n", ylab = "", xlab ="", col = c("aquamarine3", "azure3"), ylim = c(0,220))
+axis(1, labels = c("Not excluded", "Excluded"), at = c(1,2), cex.axis = 1.25)
+axis(2, las = 1)
+#title(ylab = "Abundância de girinos", cex.lab = 1.5, line = 3.5)
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
+text("b)", x = -2, y = 95, cex = 2, font = 2, adj = c(0,0))
+#dev.off()
+
+```
+
+
+
+# Analysis of draggonfly exclusion
+
+Here we built models for the second (80-day) and third (116 day) surveys to assess the effect of dragonfly exclusion on the total abundance of dragonflies. We did not find sufficient dragonflies in the first survey. Here the abundance of dragonfly in treatments where dragonflies were or were not excluded were combined (i.e. dragonfly + both dragonfly and amphibian exclusion vs control + amphibian exclusion).
+
+
+## No Dragonflies in the first survey
+```{r}
+comm_AM1_exc_atr
+```
+
+
+
+```{r}
+
+Erythrodiplax_AM2 <- comm_AM2_exc_atr$Erythrodiplax
+Pantala_AM2 <- comm_AM2_exc_atr$Pantala
+Tholymis_AM2 <- comm_AM2_exc_atr$Tholymis
+
+dragonfly_AM2 <- Erythrodiplax_AM2 + Pantala_AM2 + Tholymis_AM2
+
+Erythrodiplax_AM3 <- comm_AM3_exc_atr$Erythrodiplax
+Pantala_AM3 <- comm_AM3_exc_atr$Pantala
+
+dragonfly_AM3 <- Erythrodiplax_AM3 + Pantala_AM3
+
+```
+
+## Second survey
+```{r,  fig.width = 10, fig.height = 5, dpi = 600}
+
+mod_exc_lib_AM2_0 <- glmmTMB::glmmTMB(dragonfly_AM2 ~ 1 + block2, family = "nbinom1", data = Exp_design_exc_atr)
+mod_exc_lib_AM2_1 <- glmmTMB::glmmTMB(dragonfly_AM2 ~ exclusao_libelula + block2, family = "nbinom1", data = Exp_design_exc_atr)
+plot(simulateResiduals(mod_exc_lib_AM2_1))
+anova(mod_exc_lib_AM2_0,mod_exc_lib_AM2_1)
+```
+
+## Third survey
+```{r,  fig.width = 10, fig.height = 5, dpi = 600}
+mod_exc_lib_AM3_0 <- glmmTMB::glmmTMB(dragonfly_AM3 ~ 1 + block2, family = "nbinom1", data = Exp_design_exc_atr)
+mod_exc_lib_AM3_1 <- glmmTMB::glmmTMB(dragonfly_AM3 ~ exclusao_libelula + block2, family = "nbinom1", data = Exp_design_exc_atr)
+plot(simulateResiduals(mod_exc_lib_AM2_1))
+anova(mod_exc_lib_AM3_0,mod_exc_lib_AM3_1)
+```
+
+
+## Plot
+
+
+```{r,  fig.width = 10, fig.height = 4.5, dpi = 600}
+
+#pdf(file = "plots/test_exclusion/dragonfly.pdf", width = 6, height = 3, pointsize = 8)
+par(mfrow = c(1,2))
+par(mar = c(3, 5, 0.5,0.5), bty = "l")
+boxplot(dragonfly_AM2 ~ Exp_design_exc_atr$exclusao_libelula, xaxt = "n", yaxt = "n", ylab = "", xlab ="", col = c("burlywood3", "azure3"), ylim = c(0,6))
+axis(1, labels = c("Not Excluded", "Excluded"), at = c(1,2), cex.axis = 1.25)
+axis(2, las = 1)
+title(ylab = "Dragonfly abundance", cex.lab = 1.5, line = 3.5)
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
+text("a)", x = -2, y = 95, cex = 2, font = 2, adj = c(0,0))
+
+par(mar = c(3, 5, 0.5,0.5), bty = "l")
+boxplot(dragonfly_AM3 ~ Exp_design_exc_atr$exclusao_libelula, xaxt = "n", yaxt = "n", ylab = "", xlab ="", col = c("burlywood3", "azure3"), ylim = c(0,6))
+axis(1, labels = c("Not Excluded", "Excluded"), at = c(1,2), cex.axis = 1.25)
+axis(2, las = 1)
+#title(ylab = "Abundância de girinos", cex.lab = 1.5, line = 3.5)
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
+text("b)", x = -2, y = 95, cex = 2, font = 2, adj = c(0,0))
+#dev.off()
+```
+
+

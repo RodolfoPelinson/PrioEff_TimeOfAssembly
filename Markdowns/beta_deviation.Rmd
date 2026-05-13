@@ -536,7 +536,6 @@ anova_env
 
 
 Effect of environmental variability on observed community variability
-
 ```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
 Exp_design_all_2$env_var <- env_var$distances
 
@@ -574,6 +573,12 @@ plot(simulateResiduals(mod_dev_am_num_env))
 anova(mod_dev_am_num, mod_dev_am_num_env)
 
 
+mod_dev_env_pcs <- glmmTMB(beta_dev$deviation_distances ~ AM_days + (1|block2/sites) + 
+                            env_PCs[,1] +
+                            env_PCs[,2] + 
+                            env_PCs[,3], data = Exp_design_all_2)
+
+Anova(mod_dev_env_pcs)
 ```
 
 
