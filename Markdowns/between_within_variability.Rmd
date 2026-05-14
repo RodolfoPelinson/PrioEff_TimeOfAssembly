@@ -213,7 +213,7 @@ unique_AM_days_orig <- unique(Exp_design_all_2$AM_days_orig)
 
 par(mar  = c(4,5,1,1), bty = "l", new = FALSE)
 plot(data_within$within_dist ~ jitter(AM_days, 1),
-     data = data_within, xaxt = "n", ylab = "", xlab = "", type = "n", ylim = c(0.1,0.9), xlim = c(min(unique_AM_days_within)*1.25,max(unique_AM_days_within)*1.25),  xaxs = "i")
+     data = data_within, xaxt = "n", ylab = "", xlab = "", type = "n", ylim = c(0.1,0.6), xlim = c(min(unique_AM_days_within)*1.25,max(unique_AM_days_within)*1.25),  xaxs = "i")
 
 polygon(x = c(new_data_days_within$AM_days[1:100], new_data_days_within$AM_days[100:1]),
         y = c(predicted_within$upper[1:100], predicted_within$lower[100:1]), col = transparent("grey30", trans.val = 0.6), border = FALSE) 
@@ -244,7 +244,7 @@ letters(x = 5, y = 97, "a)", cex = 1.5)
 
 par(mar  = c(4,5,1,1), bty = "l", new = FALSE)
 plot(data_between$between_dist ~ jitter(AM_days, 1),
-     data = data_between, xaxt = "n", ylab = "", xlab = "", type = "n", ylim = c(0.1,0.9), xlim = c(min(unique_AM_days_between)*1.25,max(unique_AM_days_between)*1.25),  xaxs = "i")
+     data = data_between, xaxt = "n", ylab = "", xlab = "", type = "n", ylim = c(0.1,0.6), xlim = c(min(unique_AM_days_between)*1.25,max(unique_AM_days_between)*1.25),  xaxs = "i")
 
 #polygon(x = c(new_data_days_between$AM_days[1:100], new_data_days_between$AM_days[100:1]),
 #        y = c(predicted_between$upper[1:100], predicted_between$lower[100:1]), col = transparent("grey30", trans.val = 0.6), border = FALSE) 
