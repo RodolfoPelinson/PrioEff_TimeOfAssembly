@@ -99,8 +99,6 @@ Exp_design_all_2$AM_days_quad <- Exp_design_all_2$AM_days^2
 
 distance <- vegdist(comm_all_2, method = "bray")
 
-#distance <- vegdist(mod_plot_all$best$lvs, method = "euclidean")
-
 Exp_design_all_2$treatments_AM <- interaction(Exp_design_all_2$treatments, Exp_design_all_2$AM)
 
 beta_obj <- betadisper(distance, group = Exp_design_all_2$treatments_AM)
@@ -112,7 +110,15 @@ beta_obj <- betadisper(distance, group = Exp_design_all_2$treatments_AM)
 ``` r
 within_group_distances <- beta_obj$group.distances
 
-data_within <- data.frame(within_dist = beta_obj$distance, AM_days = Exp_design_all_2$AM_days, sites = Exp_design_all_2$sites)
+New_AM <- c(rep(32, 4), rep(80, 4), rep(116, 4), rep(158, 4))
+
+New_AM <- scale(New_AM)
+attr_New_AM <- attributes(New_AM)
+New_AM <- scale(New_AM)[,1]
+
+treatments <- rep(c("control", "both_exclusion", "drag_exclusion", "amph_exclusion"), 4)
+
+data_within <- data.frame(within_dist = within_group_distances, AM_days = New_AM, treatments = treatments)
 ```
 
 ## between groups distances
@@ -136,7 +142,7 @@ dist_between <- vegdist(cent_var, method = "euclidean")
 
 beta_between_obj <- betadisper(dist_between, group = New_AM)
 
-treatments <- rep(c("control", "closed", "drag_exclusion", "amph_exclusion"), 4)
+treatments <- rep(c("control", "both_exclusion", "drag_exclusion", "amph_exclusion"), 4)
 
 data_between <- data.frame(between_dist = beta_between_obj$distance, AM_days = New_AM, treatments = treatments)
 ```
@@ -144,9 +150,9 @@ data_between <- data.frame(between_dist = beta_between_obj$distance, AM_days = N
 ## Models
 
 ``` r
-mod_beta_whitin0 <- glmmTMB(within_dist ~ 1 + (1|sites), family = "gaussian", data = data_within)
-mod_beta_whitin1 <- glmmTMB(within_dist ~ AM_days + (1|sites), family = "gaussian", data = data_within)
-mod_beta_whitin2 <- glmmTMB(within_dist ~ AM_days + I(AM_days^2) + (1|sites), family = "gaussian", data = data_within)
+mod_beta_whitin0 <- glmmTMB(within_dist ~ 1 + (1|treatments), family = "gaussian", data = data_within)
+mod_beta_whitin1 <- glmmTMB(within_dist ~ AM_days + (1|treatments), family = "gaussian", data = data_within)
+mod_beta_whitin2 <- glmmTMB(within_dist ~ AM_days + I(AM_days^2) + (1|treatments), family = "gaussian", data = data_within)
 plot(simulateResiduals(mod_beta_whitin2))
 ```
 
@@ -159,13 +165,13 @@ anova_within
 
     ## Data: data_within
     ## Models:
-    ## mod_beta_whitin0: within_dist ~ 1 + (1 | sites), zi=~0, disp=~1
-    ## mod_beta_whitin1: within_dist ~ AM_days + (1 | sites), zi=~0, disp=~1
-    ## mod_beta_whitin2: within_dist ~ AM_days + I(AM_days^2) + (1 | sites), zi=~0, disp=~1
+    ## mod_beta_whitin0: within_dist ~ 1 + (1 | treatments), zi=~0, disp=~1
+    ## mod_beta_whitin1: within_dist ~ AM_days + (1 | treatments), zi=~0, disp=~1
+    ## mod_beta_whitin2: within_dist ~ AM_days + I(AM_days^2) + (1 | treatments), zi=~0, disp=~1
     ##                  Df     AIC     BIC logLik deviance  Chisq Chi Df Pr(>Chisq)  
-    ## mod_beta_whitin0  3 -81.999 -74.306 44.000  -87.999                           
-    ## mod_beta_whitin1  4 -84.018 -73.760 46.009  -92.018 4.0184      1    0.04501 *
-    ## mod_beta_whitin2  5 -84.284 -71.463 47.142  -94.284 2.2666      1    0.13219  
+    ## mod_beta_whitin0  3 -42.385 -40.067 24.192  -48.385                           
+    ## mod_beta_whitin1  4 -46.590 -43.500 27.295  -54.590 6.2052      1    0.01274 *
+    ## mod_beta_whitin2  5 -49.326 -45.463 29.663  -59.326 4.7361      1    0.02954 *
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
 
@@ -203,7 +209,7 @@ new_data_days_within <- data.frame(AM_days = seq(from= min(data_within$AM_days),
 new_data_days_between <- data.frame(AM_days = seq(from= min(data_between$AM_days), to = max(data_between$AM_days), length.out = 100),
                        AM_days_quad = seq(from= min(data_between$AM_days), to = max(data_between$AM_days), length.out = 100)^2)
 
-predicted_within <- predict(mod_beta_whitin1, newdata = new_data_days_within, se.fit = TRUE, re.form = NA)
+predicted_within <- predict(mod_beta_whitin2, newdata = new_data_days_within, se.fit = TRUE, re.form = NA)
 predicted_within$upper <- predicted_within$fit + predicted_within$se.fit * qnorm(0.975)
 predicted_within$lower <- predicted_within$fit + predicted_within$se.fit * qnorm(0.025) 
 
@@ -235,8 +241,10 @@ points(data_within$within_dist ~ jitter(AM_days-0.075, 0.5), pch = 21, col= "bla
 
 lines(x = new_data_days_within$AM_days,y = predicted_within$fit, col = "black", lwd = 2)
 
-title(ylab = "Distance to treatment centroid", cex.lab = 1.25, line= 3)
+title(ylab = "Average distance", cex.lab = 1.25, line= 4)
+title(ylab = "to treatment centroid", cex.lab = 1.25, line= 3)
 title(ylab = "(Within treatment variability)", cex.lab = 1, line= 2)
+
 
 axis(1, at = unique_AM_days_within, labels = c("32", "80", "116", "158"))
 title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
@@ -257,12 +265,15 @@ par(mar  = c(4,5,1,1), bty = "l", new = FALSE)
 plot(data_between$between_dist ~ jitter(AM_days, 1),
      data = data_between, xaxt = "n", ylab = "", xlab = "", type = "n", ylim = c(0.1,0.9), xlim = c(min(unique_AM_days_between)*1.25,max(unique_AM_days_between)*1.25),  xaxs = "i")
 
-polygon(x = c(new_data_days_between$AM_days[1:100], new_data_days_between$AM_days[100:1]),
-        y = c(predicted_between$upper[1:100], predicted_between$lower[100:1]), col = transparent("grey30", trans.val = 0.6), border = FALSE) 
+#polygon(x = c(new_data_days_between$AM_days[1:100], new_data_days_between$AM_days[100:1]),
+#        y = c(predicted_between$upper[1:100], predicted_between$lower[100:1]), col = transparent("grey30", trans.val = 0.6), border = FALSE) 
 
 points(data_between$between_dist ~ jitter(AM_days-0.075, 0.5), pch = 21, col= "black",bg = transparent("grey30", trans.val = 0.75), cex = 1.1, data = data_between)
 
-lines(x = new_data_days_between$AM_days,y = predicted_between$fit, col = "black", lwd = 2, lty = 2)
+#lines(x = new_data_days_between$AM_days,y = predicted_between$fit, col = "black", lwd = 2, lty = 2)
+lines(x = new_data_days_between$AM_days,y = rep(mean(data_between$between_dist), length(new_data_days_between$AM_days)), col = "black", lwd = 2, lty = 2)
+
+
 
 title(ylab = "Distance of treatment centroids", cex.lab = 1.25, line= 4)
 title(ylab = "to survey centroid", cex.lab = 1.25, line= 3)
