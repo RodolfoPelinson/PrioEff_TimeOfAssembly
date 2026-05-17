@@ -1,0 +1,930 @@
+---
+title: "Hobo data"
+author: "Rodolfo Pelinson"
+date: "2026-05-17"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, warning=FALSE, echo = FALSE, include=FALSE}
+dir<-("C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly")
+```
+
+```{r, warning=FALSE, message = FALSE}
+
+#source(paste(sep = "/",dir,"functions/remove_sp.R"))
+#source(paste(sep = "/",dir,"functions/get_scaled_lvs.R"))
+#source(paste(sep = "/",dir,"functions/text_contour.R"))
+source(paste(sep = "/",dir,"functions/letters.R"))
+
+```
+
+```{r, warning=FALSE, message = FALSE}
+
+library(vegan)
+#library(gllvm)
+#library(mvabund)
+library(DHARMa)
+library(glmmTMB)
+library(emmeans)
+#library(vioplot)
+library(yarrr)
+library(colorspace)
+#library(iNEXT)
+#library(iNEXT.beta3D)
+#library(iNEXT.3D)
+library(shape)
+library(car)
+
+```
+
+
+```{r}
+sessionInfo()
+```
+
+
+## Loading and preparing data
+
+```{r}
+load(file = paste(sep = "/",dir,"data/hobo_dayly_stats.RData"))
+hobo_pred <- read.csv(paste(sep = "/",dir,"data/hobo.csv"))
+```
+
+
+## Plots
+
+
+### Mean temperature
+
+```{r,   fig.width = 6, fig.height = 8, dpi = 600, dev.args= list(pointsize=9)}
+which_control <- which(hobo_pred$treatment == "controle")
+which_fechado_dia <- which(hobo_pred$treatment == "fechado_dia")
+which_fechado_noite <- which(hobo_pred$treatment == "fechado_noite")
+which_fechado <- which(hobo_pred$treatment == "fechado")
+
+library(shape)
+
+xlim <- as.numeric(c(as.POSIXlt("30/11/2023", format = "%d/%m/%Y"),
+          as.POSIXlt("24/04/2024", format = "%d/%m/%Y")))
+
+
+x_at <- seq.POSIXt(from = as.POSIXlt("30/11/2023", format = "%d/%m/%Y"),
+                   to = as.POSIXlt("24/04/2024", format = "%d/%m/%Y"), length.out = 6)
+
+x_labels <- as.Date(x_at)
+x_labels <- as.character(format(x_labels, "%d/%b/%y"))
+which_control <- which(hobo_pred$treatment == "controle")
+which_fechado_dia <- which(hobo_pred$treatment == "fechado_dia")
+which_fechado_noite <- which(hobo_pred$treatment == "fechado_noite")
+which_fechado <- which(hobo_pred$treatment == "fechado")
+
+library(shape)
+
+xlim <- as.numeric(c(as.POSIXlt("30/11/2023", format = "%d/%m/%Y"),
+          as.POSIXlt("24/04/2024", format = "%d/%m/%Y")))
+
+
+x_at <- seq.POSIXt(from = as.POSIXlt("30/11/2023", format = "%d/%m/%Y"),
+                   to = as.POSIXlt("24/04/2024", format = "%d/%m/%Y"), length.out = 6)
+
+x_labels <- as.Date(x_at)
+x_labels <- as.character(format(x_labels, "%d/%b/%y"))
+
+par(mfrow = c(4,1))
+
+#Mean temperature
+
+par(new = FALSE, bty = "o", mar = c(2,4,1,1))
+plot(NA, xlim = xlim, ylim = c(20, 33), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+for(i in 1:length(which_control)){
+  lines(x = as.numeric(hobo_dayly_stats[[which_control[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_control[i]]]$mean_temp, col = "#56B4E9")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_dia[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_dia[i]]]$mean_temp, col = "#CC79A7")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_noite[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_noite[i]]]$mean_temp, col = "#E69F00")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado[i]]]$mean_temp, col = "#009E73")
+}
+
+title(ylab = "Mean daily temperature (°C)", cex.lab = 1.2)
+#title(xlab = "Temperature (°C)")
+
+axis(1, at = x_at , labels = x_labels)
+axis(2, las = 2)
+
+
+par(new = TRUE, bty = "n")
+plot(NA, xlim = xlim, ylim = c(0, 100), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of amphibian", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of dragonfly", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+legend(x = max(xlim),
+       y = 105,
+       legend = c("Control", "Amphibians excl.", "Dragonfly excl.", "Both excl."),
+       col = c("#56B4E9", "#E69F00", "#CC79A7", "#009E73"), lty = c(1,1,1,1), lwd = 1,
+       xjust = 1, 
+       yjust = 1,
+       bty = "n",
+       bg = "transparent")
+
+
+
+#Max temperature
+
+par(new = FALSE, bty = "o", mar = c(2,4,1,1))
+plot(NA, xlim = xlim, ylim = c(22, 42), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+for(i in 1:length(which_control)){
+  lines(x = as.numeric(hobo_dayly_stats[[which_control[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_control[i]]]$max_temp, col = "#56B4E9")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_dia[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_dia[i]]]$max_temp, col = "#CC79A7")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_noite[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_noite[i]]]$max_temp, col = "#E69F00")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado[i]]]$max_temp, col = "#009E73")
+}
+
+title(ylab = "Maximum daily temperature (°C)", cex.lab = 1.2)
+#title(xlab = "Temperature (°C)")
+
+axis(1, at = x_at , labels = x_labels)
+axis(2, las = 2)
+
+
+par(new = TRUE, bty = "n")
+plot(NA, xlim = xlim, ylim = c(0, 100), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of amphibian", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of dragonfly", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+
+
+
+#Min temperature
+
+par(new = FALSE, bty = "o", mar = c(2,4,1,1))
+plot(NA, xlim = xlim, ylim = c(18, 32), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+for(i in 1:length(which_control)){
+  lines(x = as.numeric(hobo_dayly_stats[[which_control[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_control[i]]]$min_temp, col = "#56B4E9")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_dia[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_dia[i]]]$min_temp, col = "#CC79A7")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_noite[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_noite[i]]]$min_temp, col = "#E69F00")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado[i]]]$min_temp, col = "#009E73")
+}
+
+title(ylab = "Minimum daily temperature (°C)", cex.lab = 1.2)
+#title(xlab = "Temperature (°C)")
+
+axis(1, at = x_at , labels = x_labels)
+axis(2, las = 2)
+
+
+par(new = TRUE, bty = "n")
+plot(NA, xlim = xlim, ylim = c(0, 100), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of amphibian", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of dragonfly", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+
+
+
+
+
+#CV temperature
+
+par(new = FALSE, bty = "o", mar = c(2,4,1,1))
+plot(NA, xlim = xlim, ylim = c(0, 20), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+for(i in 1:length(which_control)){
+  lines(x = as.numeric(hobo_dayly_stats[[which_control[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_control[i]]]$cv_mean, col = "#56B4E9")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_dia[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_dia[i]]]$cv_mean, col = "#CC79A7")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_noite[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_noite[i]]]$cv_mean, col = "#E69F00")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado[i]]]$cv_mean, col = "#009E73")
+}
+
+title(ylab = "Daily temperature CV (%)", cex.lab = 1.2)
+#title(xlab = "Temperature (°C)")
+
+axis(1, at = x_at , labels = x_labels)
+axis(2, las = 2)
+
+
+par(new = TRUE, bty = "n")
+plot(NA, xlim = xlim, ylim = c(0, 100), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of amphibian", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of dragonfly", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+
+
+
+
+
+
+
+
+```
+
+
+
+```{r,   fig.width = 6, fig.height = 6, dpi = 600, dev.args= list(pointsize=9)}
+
+
+par(mfrow = c(3,1))
+
+#Mean illuminance
+
+par(new = FALSE, bty = "o", mar = c(2,4,1,1))
+plot(NA, xlim = xlim, ylim = c(0, 10000), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+for(i in 1:length(which_control)){
+  lines(x = as.numeric(hobo_dayly_stats[[which_control[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_control[i]]]$mean_daylight, col = "#56B4E9")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_dia[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_dia[i]]]$mean_daylight, col = "#CC79A7")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_noite[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_noite[i]]]$mean_daylight, col = "#E69F00")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado[i]]]$mean_daylight, col = "#009E73")
+}
+
+title(ylab = "Daily mean illuminance (Lux)", cex.lab = 1.2)
+#title(xlab = "Temperature (°C)")
+
+axis(1, at = x_at , labels = x_labels)
+axis(2, las = 2)
+
+
+par(new = TRUE, bty = "n")
+plot(NA, xlim = xlim, ylim = c(0, 100), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of amphibian", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of dragonfly", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+legend(x = min(xlim),
+       y = 105,
+       legend = c("Control", "Amphibians excl.", "Dragonfly excl.", "Both excl."),
+       col = c("#56B4E9", "#E69F00", "#CC79A7", "#009E73"), lty = c(1,1,1,1), lwd = 1,
+       xjust = 0, 
+       yjust = 1,
+       bty = "n",
+       bg = "transparent")
+
+
+
+
+
+#Max illuminance
+
+par(new = FALSE, bty = "o", mar = c(2,5,1,1))
+plot(NA, xlim = xlim, ylim = c(0, 30000), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+for(i in 1:length(which_control)){
+  lines(x = as.numeric(hobo_dayly_stats[[which_control[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_control[i]]]$max_daylight, col = "#56B4E9")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_dia[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_dia[i]]]$max_daylight, col = "#CC79A7")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_noite[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_noite[i]]]$max_daylight, col = "#E69F00")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado[i]]]$max_daylight, col = "#009E73")
+}
+
+title(ylab = "Daily max illuminance (Lux)", cex.lab = 1.2, line = 4)
+#title(xlab = "Temperature (°C)")
+
+axis(1, at = x_at , labels = x_labels)
+axis(2, las = 2)
+
+
+par(new = TRUE, bty = "n")
+plot(NA, xlim = xlim, ylim = c(0, 100), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of amphibian", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of dragonfly", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+
+
+
+#CV illuminance
+
+par(new = FALSE, bty = "o", mar = c(2,4,1,1))
+plot(NA, xlim = xlim, ylim = c(50, 170), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+for(i in 1:length(which_control)){
+  lines(x = as.numeric(hobo_dayly_stats[[which_control[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_control[i]]]$cv_daylight, col = "#56B4E9")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_dia[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_dia[i]]]$cv_daylight, col = "#CC79A7")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado_noite[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado_noite[i]]]$cv_daylight, col = "#E69F00")
+  
+  lines(x = as.numeric(hobo_dayly_stats[[which_fechado[i]]]$days_exp),
+        y = hobo_dayly_stats[[which_fechado[i]]]$cv_daylight, col = "#009E73")
+}
+
+title(ylab = "CV of Daily illuminance (%)", cex.lab = 1.2, line = 3)
+#title(xlab = "Temperature (°C)")
+
+axis(1, at = x_at , labels = x_labels)
+axis(2, las = 2)
+
+
+par(new = TRUE, bty = "n")
+plot(NA, xlim = xlim, ylim = c(0, 100), xaxt = "n", xlab = "", ylab = "", yaxt = "n")
+
+Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of amphibian", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+
+
+Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       x1 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+       y0 = -10,
+       y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
+
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 100, label = "End of dragonfly", cex = 5.8)
+text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
+     y = 95, label = "exclusion", cex = 5.8)
+```
+
+
+
+# Computing average statistics for before the exclusion of amphibians
+
+```{r}
+
+hobo_dayly_stats_excl <- list()
+for(i in 1:length(hobo_dayly_stats)){
+  data <- hobo_dayly_stats[[i]]
+  data <- data[data$days_exp <= as.POSIXlt("03/01/2024", format = "%d/%m/%Y"),]
+  hobo_dayly_stats_excl[[i]] <- data
+}
+names(hobo_dayly_stats_excl) <- names(hobo_dayly_stats)
+
+
+hobo_dayly_stats_1 <- list()
+for(i in 1:length(hobo_dayly_stats)){
+  data <- hobo_dayly_stats[[i]]
+  data <- data[data$days_exp <= as.POSIXlt("19/12/2023", format = "%d/%m/%Y"),]
+  hobo_dayly_stats_1[[i]] <- data
+}
+names(hobo_dayly_stats_1) <- names(hobo_dayly_stats)
+
+hobo_dayly_stats_2 <- list()
+for(i in 1:length(hobo_dayly_stats)){
+  data <- hobo_dayly_stats[[i]]
+  data <- data[data$days_exp > as.POSIXlt("19/12/2023", format = "%d/%m/%Y") & data$days_exp <= as.POSIXlt("05/02/2024", format = "%d/%m/%Y"),]
+  hobo_dayly_stats_2[[i]] <- data
+}
+names(hobo_dayly_stats_2) <- names(hobo_dayly_stats)
+
+
+hobo_dayly_stats_3 <- list()
+for(i in 1:length(hobo_dayly_stats)){
+  data <- hobo_dayly_stats[[i]]
+  data <- data[data$days_exp > as.POSIXlt("05/02/2024", format = "%d/%m/%Y") & data$days_exp <= as.POSIXlt("12/03/2024", format = "%d/%m/%Y"),]
+  hobo_dayly_stats_3[[i]] <- data
+}
+names(hobo_dayly_stats_3) <- names(hobo_dayly_stats)
+
+
+hobo_dayly_stats_4 <- list()
+for(i in 1:length(hobo_dayly_stats)){
+  data <- hobo_dayly_stats[[i]]
+  data <- data[data$days_exp > as.POSIXlt("12/03/2024", format = "%d/%m/%Y") & data$days_exp <= as.POSIXlt("23/04/2024", format = "%d/%m/%Y"),]
+  hobo_dayly_stats_4[[i]] <- data
+}
+names(hobo_dayly_stats_4) <- names(hobo_dayly_stats)
+
+```
+
+
+
+```{r}
+
+temp_mean <- rep(NA, nrow(hobo_pred))
+temp_max <- rep(NA, nrow(hobo_pred))
+temp_min <- rep(NA, nrow(hobo_pred))
+temp_cv <- rep(NA, nrow(hobo_pred))
+light_mean <- rep(NA, nrow(hobo_pred))
+light_max <- rep(NA, nrow(hobo_pred))
+light_cv <- rep(NA, nrow(hobo_pred))
+
+
+
+for(i in 1:nrow(hobo_pred)){
+  ID <- hobo_pred$hobo[i]
+  which_ID <- which(names(hobo_dayly_stats_excl) == ID)
+  data <- hobo_dayly_stats_excl[[which_ID]]
+  
+  temp_mean[i] <- mean(data$mean_temp)
+  temp_max[i] <- max(data$max_temp)
+  temp_min[i] <- min(data$min_temp)
+  temp_cv[i] <- mean(data$cv_mean)
+  light_mean[i] <- mean(data$mean_daylight)
+  light_max[i] <- mean(data$max_daylight)
+  light_cv[i] <- mean(data$cv_daylight)
+}
+
+hobo_pred$temp_mean <- temp_mean
+hobo_pred$temp_max <- temp_max
+hobo_pred$temp_min <- temp_min
+hobo_pred$temp_cv <- temp_cv
+hobo_pred$light_mean <- light_mean
+hobo_pred$light_max <- light_max
+hobo_pred$light_cv <- light_cv
+
+hobo_pred$block_h <- as.character(hobo_pred$block_h)
+
+```
+
+
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=9)}
+
+mod_temp_mean <- lm(temp_mean ~ treatment + block, data = hobo_pred[hobo_pred$treatment != "atrasado",])
+plot(simulateResiduals(mod_temp_mean))
+Anova(mod_temp_mean)
+temp_mean_estimates <- emmeans(mod_temp_mean, ~ treatment)
+pairs(temp_mean_estimates)
+temp_mean_estimates <- data.frame(temp_mean_estimates)
+
+mod_temp_max <- lm(temp_max ~ treatment + block, data = hobo_pred[hobo_pred$treatment != "atrasado",])
+plot(simulateResiduals(mod_temp_max))
+Anova(mod_temp_max)
+temp_max_estimates <- emmeans(mod_temp_max, ~ treatment)
+pairs(temp_max_estimates)
+temp_max_estimates <- data.frame(temp_max_estimates)
+
+mod_temp_min <- lm(temp_min ~ treatment + block, data = hobo_pred[hobo_pred$treatment != "atrasado",])
+plot(simulateResiduals(mod_temp_min))
+Anova(mod_temp_min)
+temp_min_estimates <- emmeans(mod_temp_min, ~ treatment)
+pairs(temp_min_estimates)
+temp_min_estimates <- data.frame(temp_min_estimates)
+
+mod_temp_cv <- lm(temp_cv ~ treatment + block, data = hobo_pred[hobo_pred$treatment != "atrasado",])
+plot(simulateResiduals(mod_temp_cv))
+Anova(mod_temp_cv)
+temp_cv_estimates <- emmeans(mod_temp_cv, ~ treatment)
+pairs(temp_cv_estimates)
+temp_cv_estimates <- data.frame(temp_cv_estimates)
+
+mod_light_mean <- lm(light_mean ~ treatment + block, data = hobo_pred[hobo_pred$treatment != "atrasado",])
+plot(simulateResiduals(mod_light_mean))
+Anova(mod_light_mean)
+light_mean_estimates <- emmeans(mod_light_mean, ~ treatment)
+pairs(light_mean_estimates)
+light_mean_estimates <- data.frame(light_mean_estimates)
+
+mod_light_max <- lm(light_max ~ treatment + block, data = hobo_pred[hobo_pred$treatment != "atrasado",])
+plot(simulateResiduals(mod_light_max))
+Anova(mod_light_max)
+light_max_estimates <- emmeans(mod_light_max, ~ treatment)
+pairs(light_max_estimates)
+light_max_estimates <- data.frame(light_max_estimates)
+
+mod_light_cv <- lm(light_cv ~ treatment + block, data = hobo_pred[hobo_pred$treatment != "atrasado",])
+plot(simulateResiduals(mod_light_cv))
+Anova(mod_light_cv)
+light_cv_estimates <- emmeans(mod_light_cv, ~ treatment)
+pairs(light_cv_estimates)
+light_cv_estimates <- data.frame(light_cv_estimates)
+```
+
+
+
+
+```{r,   fig.width = 6, fig.height = 8, dpi = 600, dev.args= list(pointsize=9)}
+
+hobo_pred_plot <- hobo_pred[hobo_pred$treatment != "atrasado",]
+
+
+
+
+
+cols <- transparent(c("#56B4E9",  "#009E73", "#CC79A7", "#E69F00"), 0.8)
+cols_solid <- transparent(c("#56B4E9",  "#009E73", "#CC79A7", "#E69F00"), 0.5)
+treatments_levels <- levels(as.factor(hobo_pred$treatment[hobo_pred$treatment != "atrasado"]))
+x_at <- c(1,2,3,4)
+treatments_titles <- c("Control", "Both excl.", "Drag. excl.", "Amph. excl.")
+
+
+par(mfrow = c(4,2))
+
+par(mar = c(4,5,2,1), bty = "l")
+ylim <- c(min(hobo_pred_plot$temp_mean), max(hobo_pred_plot$temp_mean))
+  
+plot(NA, xaxt= "n", yaxt = "n", xlab = "", ylab = "", xlim = c(0.5, 4.5), ylim = c(ylim))
+  
+
+for(i in 1:length(treatments_levels)){
+
+points(y = hobo_pred_plot$temp_mean[hobo_pred_plot$treatment == treatments_levels[i]],
+             x = jitter(rep(x_at[i], length(hobo_pred_plot$temp_mean[hobo_pred_plot$treatment == treatments_levels[i]])),
+                        amount = 0.25 ), pch = 21, bg = cols[i], col = transparent("black", 0.5))
+      
+lines(x = rep(x_at[i],2),
+            y = c(temp_mean_estimates$lower.CL[i],
+                  temp_mean_estimates$upper.CL[i]), lwd = 2, col = "grey30")
+      
+points(temp_mean_estimates$emmean[i],
+             x= x_at[i], pch = 21, bg = cols_solid[i], cex = 2, col = "grey30", lwd = 2)
+}
+
+
+axis(1, at = x_at, labels = FALSE)
+axis(1, at = x_at, labels = treatments_titles, tick = FALSE, line = 0.75, cex.axis = 1.2, gap.axis = -1)
+axis(2, las = 2)
+  
+title(ylab = expression("Mean daily temperature ( " * degree * "C)"), cex.lab = 1.25, line = 3.5)
+
+letters(x = 5, y = 100, label = "a)", adj = c(0,1))
+
+
+
+
+
+
+
+
+par(mar = c(4,5,2,1), bty = "l")
+ylim <- c(min(hobo_pred_plot$temp_max), max(hobo_pred_plot$temp_max))
+  
+plot(NA, xaxt= "n", yaxt = "n", xlab = "", ylab = "", xlim = c(0.5, 4.5), ylim = c(ylim))
+  
+
+for(i in 1:length(treatments_levels)){
+
+points(y = hobo_pred_plot$temp_max[hobo_pred_plot$treatment == treatments_levels[i]],
+             x = jitter(rep(x_at[i], length(hobo_pred_plot$temp_max[hobo_pred_plot$treatment == treatments_levels[i]])),
+                        amount = 0.25 ), pch = 21, bg = cols[i], col = transparent("black", 0.5))
+      
+lines(x = rep(x_at[i],2),
+            y = c(temp_max_estimates$lower.CL[i],
+                  temp_max_estimates$upper.CL[i]), lwd = 2, col = "grey30")
+      
+points(temp_max_estimates$emmean[i],
+             x= x_at[i], pch = 21, bg = cols_solid[i], cex = 2, col = "grey30", lwd = 2)
+}
+
+
+axis(1, at = x_at, labels = FALSE)
+axis(1, at = x_at, labels = treatments_titles, tick = FALSE, line = 0.75, cex.axis = 1.2, gap.axis = -1)
+axis(2, las = 2)
+  
+title(ylab = expression("Maximum daily temperature ( " * degree * "C)"), cex.lab = 1.25, line = 3.5)
+
+letters(x = 5, y = 100, label = "b)", adj = c(0,1))
+
+
+
+
+
+
+
+
+par(mar = c(4,5,2,1), bty = "l")
+ylim <- c(min(hobo_pred_plot$temp_min), max(hobo_pred_plot$temp_min))
+  
+plot(NA, xaxt= "n", yaxt = "n", xlab = "", ylab = "", xlim = c(0.5, 4.5), ylim = c(ylim))
+  
+
+for(i in 1:length(treatments_levels)){
+
+points(y = hobo_pred_plot$temp_min[hobo_pred_plot$treatment == treatments_levels[i]],
+             x = jitter(rep(x_at[i], length(hobo_pred_plot$temp_min[hobo_pred_plot$treatment == treatments_levels[i]])),
+                        amount = 0.25 ), pch = 21, bg = cols[i], col = transparent("black", 0.5))
+      
+lines(x = rep(x_at[i],2),
+            y = c(temp_min_estimates$lower.CL[i],
+                  temp_min_estimates$upper.CL[i]), lwd = 2, col = "grey30")
+      
+points(temp_min_estimates$emmean[i],
+             x= x_at[i], pch = 21, bg = cols_solid[i], cex = 2, col = "grey30", lwd = 2)
+}
+
+
+axis(1, at = x_at, labels = FALSE)
+axis(1, at = x_at, labels = treatments_titles, tick = FALSE, line = 0.75, cex.axis = 1.2, gap.axis = -1)
+axis(2, las = 2)
+  
+title(ylab = expression("Minimum daily temperature ( " * degree * "C)"), cex.lab = 1.25, line = 3.5)
+
+letters(x = 5, y = 100, label = "c)", adj = c(0,1))
+
+
+
+
+
+
+
+par(mar = c(4,5,2,1), bty = "l")
+ylim <- c(min(hobo_pred_plot$temp_cv), max(hobo_pred_plot$temp_cv))
+  
+plot(NA, xaxt= "n", yaxt = "n", xlab = "", ylab = "", xlim = c(0.5, 4.5), ylim = c(ylim))
+  
+
+for(i in 1:length(treatments_levels)){
+
+points(y = hobo_pred_plot$temp_cv[hobo_pred_plot$treatment == treatments_levels[i]],
+             x = jitter(rep(x_at[i], length(hobo_pred_plot$temp_cv[hobo_pred_plot$treatment == treatments_levels[i]])),
+                        amount = 0.25 ), pch = 21, bg = cols[i], col = transparent("black", 0.5))
+      
+lines(x = rep(x_at[i],2),
+            y = c(temp_cv_estimates$lower.CL[i],
+                  temp_cv_estimates$upper.CL[i]), lwd = 2, col = "grey30")
+      
+points(temp_cv_estimates$emmean[i],
+             x= x_at[i], pch = 21, bg = cols_solid[i], cex = 2, col = "grey30", lwd = 2)
+}
+
+
+axis(1, at = x_at, labels = FALSE)
+axis(1, at = x_at, labels = treatments_titles, tick = FALSE, line = 0.75, cex.axis = 1.2, gap.axis = -1)
+axis(2, las = 2)
+  
+title(ylab = expression("CV of daily temperature (%)"), cex.lab = 1.25, line = 3.5)
+
+letters(x = 5, y = 100, label = "d)", adj = c(0,1))
+
+
+
+
+
+
+
+
+
+
+par(mar = c(4,5,2,1), bty = "l")
+ylim <- c(min(hobo_pred_plot$light_mean), max(hobo_pred_plot$light_mean))
+  
+plot(NA, xaxt= "n", yaxt = "n", xlab = "", ylab = "", xlim = c(0.5, 4.5), ylim = c(ylim))
+  
+
+for(i in 1:length(treatments_levels)){
+
+points(y = hobo_pred_plot$light_mean[hobo_pred_plot$treatment == treatments_levels[i]],
+             x = jitter(rep(x_at[i], length(hobo_pred_plot$light_mean[hobo_pred_plot$treatment == treatments_levels[i]])),
+                        amount = 0.25 ), pch = 21, bg = cols[i], col = transparent("black", 0.5))
+      
+lines(x = rep(x_at[i],2),
+            y = c(light_mean_estimates$lower.CL[i],
+                  light_mean_estimates$upper.CL[i]), lwd = 2, col = "grey30")
+      
+points(light_mean_estimates$emmean[i],
+             x= x_at[i], pch = 21, bg = cols_solid[i], cex = 2, col = "grey30", lwd = 2)
+}
+
+
+axis(1, at = x_at, labels = FALSE)
+axis(1, at = x_at, labels = treatments_titles, tick = FALSE, line = 0.75, cex.axis = 1.2, gap.axis = -1)
+axis(2, las = 2)
+  
+title(ylab = expression("Mean daylight illuminance (Lux)"), cex.lab = 1.25, line = 3.5)
+
+letters(x = 5, y = 100, label = "e)", adj = c(0,1))
+
+
+
+
+
+
+
+
+
+
+
+par(mar = c(4,5,2,1), bty = "l")
+ylim <- c(min(hobo_pred_plot$light_max), max(hobo_pred_plot$light_max))
+  
+plot(NA, xaxt= "n", yaxt = "n", xlab = "", ylab = "", xlim = c(0.5, 4.5), ylim = c(ylim))
+  
+
+for(i in 1:length(treatments_levels)){
+
+points(y = hobo_pred_plot$light_max[hobo_pred_plot$treatment == treatments_levels[i]],
+             x = jitter(rep(x_at[i], length(hobo_pred_plot$light_max[hobo_pred_plot$treatment == treatments_levels[i]])),
+                        amount = 0.25 ), pch = 21, bg = cols[i], col = transparent("black", 0.5))
+      
+lines(x = rep(x_at[i],2),
+            y = c(light_max_estimates$lower.CL[i],
+                  light_max_estimates$upper.CL[i]), lwd = 2, col = "grey30")
+      
+points(light_max_estimates$emmean[i],
+             x= x_at[i], pch = 21, bg = cols_solid[i], cex = 2, col = "grey30", lwd = 2)
+}
+
+
+axis(1, at = x_at, labels = FALSE)
+axis(1, at = x_at, labels = treatments_titles, tick = FALSE, line = 0.75, cex.axis = 1.2, gap.axis = -1)
+axis(2, las = 2)
+  
+title(ylab = expression("Maximum daylight illuminance (Lux)"), cex.lab = 1.25, line = 3.5)
+
+letters(x = 5, y = 100, label = "f)", adj = c(0,1))
+
+
+
+
+
+
+
+
+par(mar = c(4,5,2,1), bty = "l")
+ylim <- c(min(hobo_pred_plot$light_cv), max(hobo_pred_plot$light_cv))
+  
+plot(NA, xaxt= "n", yaxt = "n", xlab = "", ylab = "", xlim = c(0.5, 4.5), ylim = c(ylim))
+  
+
+for(i in 1:length(treatments_levels)){
+
+points(y = hobo_pred_plot$light_cv[hobo_pred_plot$treatment == treatments_levels[i]],
+             x = jitter(rep(x_at[i], length(hobo_pred_plot$light_cv[hobo_pred_plot$treatment == treatments_levels[i]])),
+                        amount = 0.25 ), pch = 21, bg = cols[i], col = transparent("black", 0.5))
+      
+lines(x = rep(x_at[i],2),
+            y = c(light_cv_estimates$lower.CL[i],
+                  light_cv_estimates$upper.CL[i]), lwd = 2, col = "grey30")
+      
+points(light_cv_estimates$emmean[i],
+             x= x_at[i], pch = 21, bg = cols_solid[i], cex = 2, col = "grey30", lwd = 2)
+}
+
+
+axis(1, at = x_at, labels = FALSE)
+axis(1, at = x_at, labels = treatments_titles, tick = FALSE, line = 0.75, cex.axis = 1.2, gap.axis = -1)
+axis(2, las = 2)
+  
+title(ylab = expression("CV of daylight illuminance (Lux)"), cex.lab = 1.25, line = 3.5)
+
+letters(x = 5, y = 100, label = "g)", adj = c(0,1))
+
+
+
+
+
+
+```
+
+

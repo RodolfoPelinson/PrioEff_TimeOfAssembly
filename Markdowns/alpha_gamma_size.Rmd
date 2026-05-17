@@ -596,7 +596,6 @@ Third PC is basically related to dissolved oxygen
 
 ## Test of environmental effect on community variability
 
-
 Effect of environmental variability on observed community variability
 ```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
 Exp_design_all_2$env_var <- env_var$distances
