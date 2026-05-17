@@ -156,9 +156,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of amphibian", cex = 5.8)
+     y = 100, label = "End of amphibian", cex = 1)
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 
 Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
@@ -167,9 +167,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of dragonfly", cex = 5.8)
+     y = 100, label = "End of dragonfly", cex = 1)
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 
 legend(x = max(xlim),
@@ -218,9 +218,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of amphibian", cex = 5.8)
+     y = 100, label = "End of amphibian", cex = 1)
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 
 Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
@@ -229,9 +229,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of dragonfly", cex = 5.8)
+     y = 100, label = "End of dragonfly", cex = 1)
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 
 
@@ -272,9 +272,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of amphibian", cex = 5.8)
+     y = 100, label = "End of amphibian", cex = 1)
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 
 Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
@@ -283,9 +283,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of dragonfly", cex = 5.8)
+     y = 100, label = "End of dragonfly", cex = 1)
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 
 
@@ -328,9 +328,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of amphibian", cex = 5.8)
+     y = 100, label = "End of amphibian", cex = 1)
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 
 Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
@@ -339,9 +339,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of dragonfly", cex = 5.8)
+     y = 100, label = "End of dragonfly", cex = 1)
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 ```
 
 ![](Hobo-data_files/figure-gfm/unnamed-chunk-6-1.png)<!-- -->
@@ -384,9 +384,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of amphibian", cex = 5.8)
+     y = 100, label = "End of amphibian", cex = 1)
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 
 Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
@@ -395,9 +395,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of dragonfly", cex = 5.8)
+     y = 100, label = "End of dragonfly", cex = 1)
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 legend(x = min(xlim),
        y = 105,
@@ -447,9 +447,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of amphibian", cex = 5.8)
+     y = 100, label = "End of amphibian", cex = 1)
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 
 Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
@@ -458,9 +458,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of dragonfly", cex = 5.8)
+     y = 100, label = "End of dragonfly", cex = 1)
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 
 
@@ -501,9 +501,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of amphibian", cex = 5.8)
+     y = 100, label = "End of amphibian", cex = 1)
 text(x = as.numeric(as.POSIXlt("03/01/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 
 
 Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
@@ -512,9 +512,9 @@ Arrows(x0 = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
        y1 = 88, arr.type = "triangle", lwd = 1.5, col = "grey30", arr.length = 0.3)
 
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 100, label = "End of dragonfly", cex = 5.8)
+     y = 100, label = "End of dragonfly", cex = 1)
 text(x = as.numeric(as.POSIXlt("06/02/2024", format = "%d/%m/%Y")),
-     y = 95, label = "exclusion", cex = 5.8)
+     y = 95, label = "exclusion", cex = 1)
 ```
 
 ![](Hobo-data_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
