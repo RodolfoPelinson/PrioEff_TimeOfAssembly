@@ -10,6 +10,10 @@
 The goal of this repository is to guide readers of the paper through the
 data analysis, step by step.
 
+ [<span style="font-size: 0.85em;">*Daily temperature and illuminance
+during the exclusion
+period*</span>](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/Hobo-data.md)
+
  [<span style="font-size: 0.85em;">*Test of the effectiveness of the
 exclusion of amphibians and
 dragonflies*</span>](https://github.com/RodolfoPelinson/PrioEff_TimeOfAssembly/blob/main/Markdowns/amphibian_dragonfly_exclusion_test.md)
