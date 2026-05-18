@@ -36,6 +36,41 @@ source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
 Organizing the predictor community states and the response (the last survey.)
 
 ```{r}
+
+Env$AM_match <- rep(NA, nrow(Env))
+
+Env$AM_match[Env$amostragem == 2] <- 1
+Env$AM_match[Env$amostragem == 5] <- 2
+Env$AM_match[Env$amostragem == 7] <- 3
+Env$AM_match[Env$amostragem == 9] <- 4
+
+Env <- Env[is.na(Env$AM_match)==FALSE,]
+
+
+
+
+
+hobo_env <- read.csv(paste(sep = "/",dir,"data/hobo_env.csv"))
+
+index_env <- interaction(Env$id, Env$AM_match)
+index_hobo <- interaction(hobo_env$ID, hobo_env$AM)
+
+index <- match(index_env, index_hobo)
+hobo_env <- hobo_env[index,]
+
+#data.frame(Env$id, hobo_env$ID, Env$AM_match, hobo_env$AM)
+
+Env$hobo_temp <- hobo_env$temp_mean
+Env$iluminance <- hobo_env$light_mean
+
+
+Env <- Env[,-which(colnames(Env) == "Temperatura")]
+
+```
+
+
+
+```{r}
 comm_AM1 <- remove_sp(communities_AM1, 3)
 comm_AM2 <- remove_sp(communities_AM2, 3)
 comm_AM3 <- remove_sp(communities_AM3, 3)
@@ -48,7 +83,8 @@ comm_AM4_drop_atrasado <- comm_AM4[Exp_design$treatments != "atrasado",]
 
 Exp_design_drop_atrasado <- Exp_design[Exp_design$treatments != "atrasado",]
 
-Env_AM4_drop_atrasado <- Env[Env$Tratamento != "atrasado" & Env$amostragem == "4",]
+
+Env_AM4_drop_atrasado <- Env[Env$Tratamento != "atrasado" & Env$AM_match == "4",]
 Env_AM4_drop_atrasado <- Env_AM4_drop_atrasado[match(Exp_design_drop_atrasado$sites, Env_AM4_drop_atrasado$id),]
 
 colnames(comm_AM1_drop_atrasado) <- gsub(" ", "_", colnames(comm_AM1_drop_atrasado))
@@ -65,20 +101,22 @@ comm_AM1_pred_st <- decostand(comm_AM1_drop_atrasado, method = "stand")
 comm_AM2_pred_st <- decostand(comm_AM2_drop_atrasado, method = "stand")
 comm_AM3_pred_st <- decostand(comm_AM3_drop_atrasado, method = "stand")
 
-set.seed(1); nmds_prior_AM1 <- metaMDS(comm_AM1_pred, distance  = "bray", k = 3)
+set.seed(1); nmds_prior_AM1 <- metaMDS(comm_AM1_pred, distance  = "bray", k = 3, try = 50, trymax = 50)
 comm_nmds_AM1 <- data.frame(nmds_prior_AM1$points)
 comm_AM1_pred_nmds <- decostand(comm_nmds_AM1, method = "stand")
 
-set.seed(1); nmds_prior_AM2 <- metaMDS(comm_AM2_pred, distance  = "bray", k = 3)
+set.seed(1); nmds_prior_AM2 <- metaMDS(comm_AM2_pred, distance  = "bray", k = 3, try = 50, trymax = 50)
 comm_nmds_AM2 <- data.frame(nmds_prior_AM2$points)
 comm_AM2_pred_nmds <- decostand(comm_nmds_AM2, method = "stand")
 
-set.seed(1); nmds_prior_AM3 <- metaMDS(comm_AM3_pred, distance  = "bray", k = 3)
+set.seed(1); nmds_prior_AM3 <- metaMDS(comm_AM3_pred, distance  = "bray", k = 3, try = 50, trymax = 50)
 comm_nmds_AM3 <- data.frame(nmds_prior_AM3$points)
 comm_AM3_pred_nmds <- decostand(comm_nmds_AM3, method = "stand")
 
-Env_st_AM4 <- decostand(Env_AM4_drop_atrasado[,c(6:7,9:11)], method = "stand")
+Env_st_AM4 <- decostand(Env_AM4_drop_atrasado[,colnames(Env_AM4_drop_atrasado) %in% c("pH","OD","Condutividade","TDS","hobo_temp", "illuminance")], method = "stand")
 pca_env_AM4 <- rda(Env_st_AM4)
+pca_env_AM4$CA$eig/sum(pca_env_AM4$CA$eig)
+pca_env_AM4$CA$v
 Env_st_AM4_pca <- data.frame(pca_env_AM4$CA$u[,1:3])
 Env_st_AM4_pca <- decostand(Env_st_AM4_pca, method = "stand")
 
@@ -100,22 +138,23 @@ Variation partitioning using the first survey as a predictor.
 varpart_priority_AM1 <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM1, DF_adj_r2 = FALSE)
 varpart_priority_AM1$R2_fractions_com
 
-anova_priority_AM1 <- anova(varpart_priority_AM1$models$`Block-Env`, varpart_priority_AM1$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_priority_AM1 <- anova(varpart_priority_AM1$models$`Block-Env`, varpart_priority_AM1$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
 
 ```
 
-```{r, cache = TRUE}
+```{r, cache = FALSE}
 varpart_priority_AM1_reduced <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM1_reduced, DF_adj_r2 = FALSE)
 varpart_priority_AM1_reduced$R2_fractions_com
 
-anova_priority_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Env`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_priority_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Env`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
 anova_priority_AM1_reduced
 
-anova_env_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_env_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
 anova_env_AM1_reduced
 
-anova_block_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Env-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+anova_block_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Env-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
 anova_block_AM1_reduced
+
 ```
 
 
@@ -132,7 +171,7 @@ anova_priority_AM2 <- anova(varpart_priority_AM2$models$`Block-Env`, varpart_pri
 
 ```
 
-```{r, cache = TRUE}
+```{r, cache = FALSE}
 
 varpart_priority_AM2_reduced <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM2_reduced, DF_adj_r2 = FALSE)
 varpart_priority_AM2_reduced$R2_fractions_com
@@ -145,6 +184,7 @@ anova_env_AM2_reduced
 
 anova_block_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Env-Prior`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
 anova_block_AM2_reduced
+
 ```
 
 
@@ -153,7 +193,7 @@ anova_block_AM2_reduced
 
 Variation partitioning using the third survey as a predictor.
 
-```{r, cache = TRUE}
+```{r, cache = FALSE}
 
 varpart_priority_AM3_reduced <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM3_reduced, DF_adj_r2 = FALSE)
 varpart_priority_AM3_reduced$R2_fractions_com
@@ -238,7 +278,7 @@ legend(x = 100, y = 45, xjust = 1, yjust = 1, legend = c("Full", "Partial"), pch
 
 
 
-```{r, fig.width = 3, fig.height = 2.5, dpi = 600, dev.args= list(pointsize=9)}
+```{r, fig.width = 3, fig.height = 2.5, dpi = 600, dev.args= list(pointsize=8)}
 cols <- c("#98DF8A", "#9EDAE5", "#F7B6D2")
 names(cols) <- c("Block", "Env", "Priority")
 
@@ -345,6 +385,118 @@ legend(x = 100, y = 100, xjust = 1, yjust = 1,
 
 
 
+```{r, fig.width = 3, fig.height = 2.5, dpi = 600, dev.args= list(pointsize=8)}
+cols <- c("#98DF8A", "#9EDAE5", "#F7B6D2")
+names(cols) <- c("Block", "Env", "Priority")
+
+
+#svg(file = "C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly/Plots/Community structure analysis/prior_effec_time.svg", width = 3, height = 2.5, pointsize = 9)
+
+
+par(mar = c(4,4,1,1), bty = "l")
+plot(NA,xlim = c(42-5, 126 + 5), ylim = c(0, 0.35), xaxt = "n", yaxt = "n", ylab = "", xlab = "")
+
+
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[1,1],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[1,1],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[1,1]), col = cols[1], lwd = 3)
+
+
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[1,2],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[1,2],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[1,2]), col = cols[1], lwd = 2)
+
+
+
+
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[1,1],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[1,1],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[1,1]), col = cols[1],pch = c(16,16,16), cex = 1.5)
+
+
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[1,2],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[1,2],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[1,2]), col = cols[1],  bg = "white", pch = c(21,21,21), cex = 1.5, lwd = 2)
+
+##############################################
+
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[2,1],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[2,1],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[2,1]), col = cols[2], lwd = 3)
+
+
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[2,2],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[2,2],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[2,2]), col = cols[2], lwd = 2)
+
+
+
+
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[2,1],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[2,1],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[2,1]), col = cols[2],pch = c(16,16,16), cex = 1.5)
+
+
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[2,2],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[2,2],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[2,2]), col = cols[2],  bg = "white", pch = c(21,21,21), cex = 1.5, lwd = 2)
+
+
+##############################################
+
+
+
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,1]), col = cols[3], lwd = 3)
+
+
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,2]), col = cols[3], lwd = 2)
+
+
+
+
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,1]), col = cols[3], bg = cols[3], pch = c(21,21,21), cex = 1.5)
+
+
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,2]), col = cols[3],  bg = "white", pch = c(21,21,21), cex = 1.5, lwd = 2)
+
+
+
+axis(2, las = 2, line = 0, labels = TRUE)
+axis(1, at = c(158 - 116, 158 - 80, 158 - 32),cex.axis = 1)
+
+title(xlab = "Distance from the last survey (days)", cex.lab = 1)
+title(ylab = "Likelihood ratio R²", cex.lab = 1)
+
+
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA,xlim = c(0, 100), ylim = c(0, 100), xaxt = "n", yaxt = "n", ylab = "", xlab = "")
+legend(x = 100, y = 100, xjust = 1, yjust = 1,
+       legend = c("Blocks" ,"Water parameters", "Previous structure"),
+       pch = c(21,21, 21), pt.bg = cols, col = cols, pt.cex = 1.5, lwd = 2, bty = "n", cex = 0.75)
+
+legend(x = 20, y = 100, xjust = 0, yjust = 1,
+       legend = c("Partial effect" ,"Full effect"),
+       pch = c(21,21, 21), pt.bg = c("white", "grey20"), col = "grey20", pt.cex = 1.5, lwd = 2, bty = "n", cex = 0.75)
+
+#dev.off()
+
+```
+
+
+
+
+
+
+
+
 
 
 
@@ -355,26 +507,26 @@ names(cols) <- c("Block", "Env", "Priority")
 
 par(mar = c(4,4,1,1), bty = "l")
 plot(NA,xlim = c(42-5, 126 + 5), ylim = c(0, 0.8), xaxt = "n", yaxt = "n", ylab = "", xlab = "")
-lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3$R2_fractions_com[3,1],
-                                                  varpart_priority_AM2$R2_fractions_com[3,1],
-                                                  varpart_priority_AM1$R2_fractions_com[3,1]), col = cols[3], lwd = 3)
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,1]), col = cols[3], lwd = 3)
 
 
-lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3$R2_fractions_com[3,2],
-                                                  varpart_priority_AM2$R2_fractions_com[3,2],
-                                                  varpart_priority_AM1$R2_fractions_com[3,2]), col = cols[3], lwd = 3)
+lines(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,2]), col = cols[3], lwd = 3)
 
 
 
 
-points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3$R2_fractions_com[3,1],
-                                                  varpart_priority_AM2$R2_fractions_com[3,1],
-                                                  varpart_priority_AM1$R2_fractions_com[3,1]), col = cols[3], pch = c(16,16,16), cex = 2)
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,1],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,1]), col = cols[3], pch = c(16,16,16), cex = 2)
 
 
-points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3$R2_fractions_com[3,2],
-                                                  varpart_priority_AM2$R2_fractions_com[3,2],
-                                                  varpart_priority_AM1$R2_fractions_com[3,2]), col = cols[3], pch = c(21,21,21), cex = 2, lwd = 2)
+points(x = c(158 - 116, 158 - 80, 158 - 32), y = c(varpart_priority_AM3_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM2_reduced$R2_fractions_com[3,2],
+                                                  varpart_priority_AM1_reduced$R2_fractions_com[3,2]), col = cols[3], pch = c(21,21,21), cex = 2, lwd = 2)
 
 
 
