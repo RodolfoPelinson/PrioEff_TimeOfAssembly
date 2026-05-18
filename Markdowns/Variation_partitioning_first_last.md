@@ -481,24 +481,24 @@ varpart_priority_AM1_reduced$R2_fractions_com
     ## Prior        0.2253033        0.2208611
 
 ``` r
-anova_priority_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Env`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
+partial_anova_priority_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Env`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
 ```
 
     ## Resampling begins for test 1.
     ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.06 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.08 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.11 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.13 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.17 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.20 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.22 minutes...
-    ## Time elapsed: 0 hr 0 min 15 sec
+    ##  Resampling run 100 finished. Time elapsed: 0.03 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.06 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.13 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.17 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.20 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.24 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.27 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.31 minutes...
+    ## Time elapsed: 0 hr 0 min 20 sec
 
 ``` r
-anova_priority_AM1_reduced
+partial_anova_priority_AM1_reduced
 ```
 
     ## Analysis of Deviance Table
@@ -520,24 +520,24 @@ anova_priority_AM1_reduced
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
 ``` r
-anova_env_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
+partial_anova_env_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
 ```
 
     ## Resampling begins for test 1.
     ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.04 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.05 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.07 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.09 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.11 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.13 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.14 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.16 minutes...
-    ## Time elapsed: 0 hr 0 min 10 sec
+    ##  Resampling run 100 finished. Time elapsed: 0.03 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.07 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.10 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.14 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.18 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.21 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.23 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.26 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.29 minutes...
+    ## Time elapsed: 0 hr 0 min 19 sec
 
 ``` r
-anova_env_AM1_reduced
+partial_anova_env_AM1_reduced
 ```
 
     ## Analysis of Deviance Table
@@ -559,24 +559,24 @@ anova_env_AM1_reduced
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
 ``` r
-anova_block_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Env-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
+partial_anova_block_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Env-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
 ```
 
     ## Resampling begins for test 1.
     ##  Resampling run 0 finished. Time elapsed: 0.00 minutes...
-    ##  Resampling run 100 finished. Time elapsed: 0.02 minutes...
-    ##  Resampling run 200 finished. Time elapsed: 0.03 minutes...
-    ##  Resampling run 300 finished. Time elapsed: 0.05 minutes...
-    ##  Resampling run 400 finished. Time elapsed: 0.07 minutes...
-    ##  Resampling run 500 finished. Time elapsed: 0.08 minutes...
-    ##  Resampling run 600 finished. Time elapsed: 0.10 minutes...
-    ##  Resampling run 700 finished. Time elapsed: 0.11 minutes...
-    ##  Resampling run 800 finished. Time elapsed: 0.13 minutes...
-    ##  Resampling run 900 finished. Time elapsed: 0.15 minutes...
-    ## Time elapsed: 0 hr 0 min 9 sec
+    ##  Resampling run 100 finished. Time elapsed: 0.03 minutes...
+    ##  Resampling run 200 finished. Time elapsed: 0.05 minutes...
+    ##  Resampling run 300 finished. Time elapsed: 0.07 minutes...
+    ##  Resampling run 400 finished. Time elapsed: 0.09 minutes...
+    ##  Resampling run 500 finished. Time elapsed: 0.11 minutes...
+    ##  Resampling run 600 finished. Time elapsed: 0.13 minutes...
+    ##  Resampling run 700 finished. Time elapsed: 0.15 minutes...
+    ##  Resampling run 800 finished. Time elapsed: 0.18 minutes...
+    ##  Resampling run 900 finished. Time elapsed: 0.20 minutes...
+    ## Time elapsed: 0 hr 0 min 13 sec
 
 ``` r
-anova_block_AM1_reduced
+partial_anova_block_AM1_reduced
 ```
 
     ## Analysis of Deviance Table
@@ -597,6 +597,64 @@ anova_block_AM1_reduced
     ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
+``` r
+full_anova_priority_AM1_reduced <- anova(varpart_priority_AM1_reduced$model_null,varpart_priority_AM1_reduced$models$Prior, show.time = "none", resamp = "pit.trap")
+full_anova_priority_AM1_reduced
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## varpart_priority_AM1_reduced$model_null: resp_mv ~ 1
+    ## varpart_priority_AM1_reduced$models$Prior: resp_mv ~ MDS1 + MDS2 + MDS3
+    ## 
+    ## Multivariate test:
+    ##                                           Res.Df Df.diff   Dev Pr(>Dev)  
+    ## varpart_priority_AM1_reduced$model_null       23                         
+    ## varpart_priority_AM1_reduced$models$Prior     20       3 70.66    0.032 *
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+``` r
+full_anova_env_AM1_reduced <- anova(varpart_priority_AM1_reduced$model_null,varpart_priority_AM1_reduced$models$Env, show.time = "none", resamp = "pit.trap")
+full_anova_env_AM1_reduced
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## varpart_priority_AM1_reduced$model_null: resp_mv ~ 1
+    ## varpart_priority_AM1_reduced$models$Env: resp_mv ~ PC1 + PC2 + PC3
+    ## 
+    ## Multivariate test:
+    ##                                         Res.Df Df.diff   Dev Pr(>Dev)   
+    ## varpart_priority_AM1_reduced$model_null     23                          
+    ## varpart_priority_AM1_reduced$models$Env     20       3 81.73    0.003 **
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+``` r
+full_anova_block_AM1_reduced <- anova(varpart_priority_AM1_reduced$model_null,varpart_priority_AM1_reduced$models$Block, show.time = "none", resamp = "pit.trap")
+full_anova_block_AM1_reduced
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## varpart_priority_AM1_reduced$model_null: resp_mv ~ 1
+    ## varpart_priority_AM1_reduced$models$Block: resp_mv ~ block2
+    ## 
+    ## Multivariate test:
+    ##                                           Res.Df Df.diff   Dev Pr(>Dev)
+    ## varpart_priority_AM1_reduced$model_null       23                       
+    ## varpart_priority_AM1_reduced$models$Block     21       2 34.73    0.318
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
 Variation partitioning using the second survey as a predictor.
 
 ``` r
@@ -610,8 +668,8 @@ varpart_priority_AM2_reduced$R2_fractions_com
     ## Prior        0.2475859       0.19370887
 
 ``` r
-anova_priority_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Block-Env`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_priority_AM2_reduced
+partial_anova_priority_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Block-Env`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_priority_AM2_reduced
 ```
 
     ## Analysis of Deviance Table
@@ -625,7 +683,7 @@ anova_priority_AM2_reduced
     ## varpart_priority_AM2_reduced$models$`Block-Env-Prior`     15       3 99.68
     ##                                                       Pr(>Dev)  
     ## varpart_priority_AM2_reduced$models$`Block-Env`                 
-    ## varpart_priority_AM2_reduced$models$`Block-Env-Prior`    0.088 .
+    ## varpart_priority_AM2_reduced$models$`Block-Env-Prior`     0.09 .
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## Arguments:
@@ -633,8 +691,8 @@ anova_priority_AM2_reduced
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
 ``` r
-anova_env_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Block-Prior`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_env_AM2_reduced
+partial_anova_env_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Block-Prior`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_env_AM2_reduced
 ```
 
     ## Analysis of Deviance Table
@@ -648,7 +706,7 @@ anova_env_AM2_reduced
     ## varpart_priority_AM2_reduced$models$`Block-Env-Prior`     15       3 113.5
     ##                                                       Pr(>Dev)  
     ## varpart_priority_AM2_reduced$models$`Block-Prior`               
-    ## varpart_priority_AM2_reduced$models$`Block-Env-Prior`    0.041 *
+    ## varpart_priority_AM2_reduced$models$`Block-Env-Prior`     0.03 *
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## Arguments:
@@ -656,8 +714,8 @@ anova_env_AM2_reduced
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
 ``` r
-anova_block_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Env-Prior`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_block_AM2_reduced
+partial_anova_block_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Env-Prior`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_block_AM2_reduced
 ```
 
     ## Analysis of Deviance Table
@@ -671,7 +729,65 @@ anova_block_AM2_reduced
     ## varpart_priority_AM2_reduced$models$`Block-Env-Prior`     15       2 50.03
     ##                                                       Pr(>Dev)
     ## varpart_priority_AM2_reduced$models$`Env-Prior`               
-    ## varpart_priority_AM2_reduced$models$`Block-Env-Prior`     0.29
+    ## varpart_priority_AM2_reduced$models$`Block-Env-Prior`    0.303
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+``` r
+full_anova_priority_AM2_reduced <- anova(varpart_priority_AM2_reduced$model_null,varpart_priority_AM2_reduced$models$Prior, show.time = "none", resamp = "pit.trap")
+full_anova_priority_AM2_reduced
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## varpart_priority_AM2_reduced$model_null: resp_mv ~ 1
+    ## varpart_priority_AM2_reduced$models$Prior: resp_mv ~ MDS1 + MDS2 + MDS3
+    ## 
+    ## Multivariate test:
+    ##                                           Res.Df Df.diff   Dev Pr(>Dev)  
+    ## varpart_priority_AM2_reduced$model_null       23                         
+    ## varpart_priority_AM2_reduced$models$Prior     20       3 80.86    0.011 *
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+``` r
+full_anova_env_AM2_reduced <- anova(varpart_priority_AM2_reduced$model_null,varpart_priority_AM2_reduced$models$Env, show.time = "none", resamp = "pit.trap")
+full_anova_env_AM2_reduced
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## varpart_priority_AM2_reduced$model_null: resp_mv ~ 1
+    ## varpart_priority_AM2_reduced$models$Env: resp_mv ~ PC1 + PC2 + PC3
+    ## 
+    ## Multivariate test:
+    ##                                         Res.Df Df.diff   Dev Pr(>Dev)   
+    ## varpart_priority_AM2_reduced$model_null     23                          
+    ## varpart_priority_AM2_reduced$models$Env     20       3 81.73    0.006 **
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+``` r
+full_anova_block_AM2_reduced <- anova(varpart_priority_AM2_reduced$model_null,varpart_priority_AM2_reduced$models$Block, show.time = "none", resamp = "pit.trap")
+full_anova_block_AM2_reduced
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## varpart_priority_AM2_reduced$model_null: resp_mv ~ 1
+    ## varpart_priority_AM2_reduced$models$Block: resp_mv ~ block2
+    ## 
+    ## Multivariate test:
+    ##                                           Res.Df Df.diff   Dev Pr(>Dev)
+    ## varpart_priority_AM2_reduced$model_null       23                       
+    ## varpart_priority_AM2_reduced$models$Block     21       2 34.73    0.298
     ## Arguments:
     ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
@@ -689,8 +805,8 @@ varpart_priority_AM3_reduced$R2_fractions_com
     ## Prior        0.2511176        0.1808293
 
 ``` r
-anova_priority_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Block-Env`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_priority_AM3_reduced
+partial_anova_priority_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Block-Env`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_priority_AM3_reduced
 ```
 
     ## Analysis of Deviance Table
@@ -704,14 +820,14 @@ anova_priority_AM3_reduced
     ## varpart_priority_AM3_reduced$models$`Block-Env-Prior`     15       3 84.82
     ##                                                       Pr(>Dev)
     ## varpart_priority_AM3_reduced$models$`Block-Env`               
-    ## varpart_priority_AM3_reduced$models$`Block-Env-Prior`    0.193
+    ## varpart_priority_AM3_reduced$models$`Block-Env-Prior`    0.168
     ## Arguments:
     ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
 ``` r
-anova_env_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Block-Prior`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_env_AM3_reduced
+partial_anova_env_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Block-Prior`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_env_AM3_reduced
 ```
 
     ## Analysis of Deviance Table
@@ -725,7 +841,7 @@ anova_env_AM3_reduced
     ## varpart_priority_AM3_reduced$models$`Block-Env-Prior`     15       3 97.03
     ##                                                       Pr(>Dev)  
     ## varpart_priority_AM3_reduced$models$`Block-Prior`               
-    ## varpart_priority_AM3_reduced$models$`Block-Env-Prior`    0.063 .
+    ## varpart_priority_AM3_reduced$models$`Block-Env-Prior`    0.072 .
     ## ---
     ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
     ## Arguments:
@@ -733,8 +849,8 @@ anova_env_AM3_reduced
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
 
 ``` r
-anova_block_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Env-Prior`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_block_AM3_reduced
+partial_anova_block_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Env-Prior`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_block_AM3_reduced
 ```
 
     ## Analysis of Deviance Table
@@ -748,7 +864,65 @@ anova_block_AM3_reduced
     ## varpart_priority_AM3_reduced$models$`Block-Env-Prior`     15       2 41.47
     ##                                                       Pr(>Dev)
     ## varpart_priority_AM3_reduced$models$`Env-Prior`               
-    ## varpart_priority_AM3_reduced$models$`Block-Env-Prior`    0.423
+    ## varpart_priority_AM3_reduced$models$`Block-Env-Prior`    0.419
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+``` r
+full_anova_priority_AM3_reduced <- anova(varpart_priority_AM3_reduced$model_null, varpart_priority_AM3_reduced$models$Prior, show.time = "none", resamp = "pit.trap")
+full_anova_priority_AM3_reduced
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## varpart_priority_AM3_reduced$model_null: resp_mv ~ 1
+    ## varpart_priority_AM3_reduced$models$Prior: resp_mv ~ MDS1 + MDS2 + MDS3
+    ## 
+    ## Multivariate test:
+    ##                                           Res.Df Df.diff   Dev Pr(>Dev)  
+    ## varpart_priority_AM3_reduced$model_null       23                         
+    ## varpart_priority_AM3_reduced$models$Prior     20       3 80.19    0.011 *
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+``` r
+full_anova_env_AM3_reduced <- anova(varpart_priority_AM3_reduced$model_null,varpart_priority_AM3_reduced$models$Env, show.time = "none", resamp = "pit.trap")
+full_anova_env_AM3_reduced
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## varpart_priority_AM3_reduced$model_null: resp_mv ~ 1
+    ## varpart_priority_AM3_reduced$models$Env: resp_mv ~ PC1 + PC2 + PC3
+    ## 
+    ## Multivariate test:
+    ##                                         Res.Df Df.diff   Dev Pr(>Dev)   
+    ## varpart_priority_AM3_reduced$model_null     23                          
+    ## varpart_priority_AM3_reduced$models$Env     20       3 81.73    0.005 **
+    ## ---
+    ## Signif. codes:  0 '***' 0.001 '**' 0.01 '*' 0.05 '.' 0.1 ' ' 1
+    ## Arguments:
+    ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
+    ##  P-value calculated using 999 iterations via PIT-trap resampling.
+
+``` r
+full_anova_block_AM3_reduced <- anova(varpart_priority_AM3_reduced$model_null,varpart_priority_AM3_reduced$models$Block, show.time = "none", resamp = "pit.trap")
+full_anova_block_AM3_reduced
+```
+
+    ## Analysis of Deviance Table
+    ## 
+    ## varpart_priority_AM3_reduced$model_null: resp_mv ~ 1
+    ## varpart_priority_AM3_reduced$models$Block: resp_mv ~ block2
+    ## 
+    ## Multivariate test:
+    ##                                           Res.Df Df.diff   Dev Pr(>Dev)
+    ## varpart_priority_AM3_reduced$model_null       23                       
+    ## varpart_priority_AM3_reduced$models$Block     21       2 34.73    0.306
     ## Arguments:
     ##  Test statistics calculated assuming uncorrelated response (for faster computation) 
     ##  P-value calculated using 999 iterations via PIT-trap resampling.
@@ -798,7 +972,7 @@ plot(NA,xlim = c(0, 100), ylim = c(0, 100), xaxt = "n", yaxt = "n", ylab = "", x
 legend(x = 100, y = 45, xjust = 1, yjust = 1, legend = c("Full", "Partial"), pch = c(21,21), pt.bg = c(cols[3],"white"), col = cols[3], pt.cex = 1.5, lwd = 2, bty = "n", cex = 0.75)
 ```
 
-![](Variation_partitioning_first_last_files/figure-gfm/unnamed-chunk-13-1.png)<!-- -->
+![](Variation_partitioning_first_last_files/figure-gfm/unnamed-chunk-16-1.png)<!-- -->
 
 ``` r
 #dev.off()
@@ -902,7 +1076,7 @@ legend(x = 100, y = 100, xjust = 1, yjust = 1,
        pch = c(21,21, 21, 21), pt.bg = c("white","white","white"), col = cols, pt.cex = 1.5, lwd = 2, bty = "n", cex = 0.75)
 ```
 
-![](Variation_partitioning_first_last_files/figure-gfm/unnamed-chunk-14-1.png)<!-- -->
+![](Variation_partitioning_first_last_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
 ``` r
 #dev.off()
@@ -1010,7 +1184,7 @@ legend(x = 20, y = 100, xjust = 0, yjust = 1,
        pch = c(21,21, 21), pt.bg = c("white", "grey20"), col = "grey20", pt.cex = 1.5, lwd = 2, bty = "n", cex = 0.75)
 ```
 
-![](Variation_partitioning_first_last_files/figure-gfm/unnamed-chunk-15-1.png)<!-- -->
+![](Variation_partitioning_first_last_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 ``` r
 #dev.off()

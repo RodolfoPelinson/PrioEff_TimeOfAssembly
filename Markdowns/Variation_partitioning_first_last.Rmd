@@ -146,16 +146,28 @@ anova_priority_AM1 <- anova(varpart_priority_AM1$models$`Block-Env`, varpart_pri
 varpart_priority_AM1_reduced <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM1_reduced, DF_adj_r2 = FALSE)
 varpart_priority_AM1_reduced$R2_fractions_com
 
-anova_priority_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Env`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
-anova_priority_AM1_reduced
+partial_anova_priority_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Env`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
+partial_anova_priority_AM1_reduced
 
-anova_env_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
-anova_env_AM1_reduced
+partial_anova_env_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Block-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
+partial_anova_env_AM1_reduced
 
-anova_block_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Env-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
-anova_block_AM1_reduced
+partial_anova_block_AM1_reduced <- anova(varpart_priority_AM1_reduced$models$`Env-Prior`, varpart_priority_AM1_reduced$models$`Block-Env-Prior`, show.time = "all", resamp = "pit.trap")
+partial_anova_block_AM1_reduced
 
 ```
+
+```{r}
+full_anova_priority_AM1_reduced <- anova(varpart_priority_AM1_reduced$model_null,varpart_priority_AM1_reduced$models$Prior, show.time = "none", resamp = "pit.trap")
+full_anova_priority_AM1_reduced
+
+full_anova_env_AM1_reduced <- anova(varpart_priority_AM1_reduced$model_null,varpart_priority_AM1_reduced$models$Env, show.time = "none", resamp = "pit.trap")
+full_anova_env_AM1_reduced
+
+full_anova_block_AM1_reduced <- anova(varpart_priority_AM1_reduced$model_null,varpart_priority_AM1_reduced$models$Block, show.time = "none", resamp = "pit.trap")
+full_anova_block_AM1_reduced
+```
+
 
 
 Variation partitioning using the second survey as a predictor.
@@ -176,15 +188,26 @@ anova_priority_AM2 <- anova(varpart_priority_AM2$models$`Block-Env`, varpart_pri
 varpart_priority_AM2_reduced <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM2_reduced, DF_adj_r2 = FALSE)
 varpart_priority_AM2_reduced$R2_fractions_com
 
-anova_priority_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Block-Env`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_priority_AM2_reduced
+partial_anova_priority_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Block-Env`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_priority_AM2_reduced
 
-anova_env_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Block-Prior`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_env_AM2_reduced
+partial_anova_env_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Block-Prior`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_env_AM2_reduced
 
-anova_block_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Env-Prior`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_block_AM2_reduced
+partial_anova_block_AM2_reduced <- anova(varpart_priority_AM2_reduced$models$`Env-Prior`, varpart_priority_AM2_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_block_AM2_reduced
 
+```
+
+```{r}
+full_anova_priority_AM2_reduced <- anova(varpart_priority_AM2_reduced$model_null,varpart_priority_AM2_reduced$models$Prior, show.time = "none", resamp = "pit.trap")
+full_anova_priority_AM2_reduced
+
+full_anova_env_AM2_reduced <- anova(varpart_priority_AM2_reduced$model_null,varpart_priority_AM2_reduced$models$Env, show.time = "none", resamp = "pit.trap")
+full_anova_env_AM2_reduced
+
+full_anova_block_AM2_reduced <- anova(varpart_priority_AM2_reduced$model_null,varpart_priority_AM2_reduced$models$Block, show.time = "none", resamp = "pit.trap")
+full_anova_block_AM2_reduced
 ```
 
 
@@ -198,18 +221,31 @@ Variation partitioning using the third survey as a predictor.
 varpart_priority_AM3_reduced <- varpart_manyglm(comm_AM4_drop_atrasado, pred = preds_AM3_reduced, DF_adj_r2 = FALSE)
 varpart_priority_AM3_reduced$R2_fractions_com
 
-anova_priority_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Block-Env`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_priority_AM3_reduced
+partial_anova_priority_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Block-Env`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_priority_AM3_reduced
 
-anova_env_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Block-Prior`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_env_AM3_reduced
+partial_anova_env_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Block-Prior`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_env_AM3_reduced
 
-anova_block_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Env-Prior`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
-anova_block_AM3_reduced
+partial_anova_block_AM3_reduced <- anova(varpart_priority_AM3_reduced$models$`Env-Prior`, varpart_priority_AM3_reduced$models$`Block-Env-Prior`, show.time = "none", resamp = "pit.trap")
+partial_anova_block_AM3_reduced
 
 
 
 ```
+
+```{r}
+full_anova_priority_AM3_reduced <- anova(varpart_priority_AM3_reduced$model_null, varpart_priority_AM3_reduced$models$Prior, show.time = "none", resamp = "pit.trap")
+full_anova_priority_AM3_reduced
+
+full_anova_env_AM3_reduced <- anova(varpart_priority_AM3_reduced$model_null,varpart_priority_AM3_reduced$models$Env, show.time = "none", resamp = "pit.trap")
+full_anova_env_AM3_reduced
+
+full_anova_block_AM3_reduced <- anova(varpart_priority_AM3_reduced$model_null,varpart_priority_AM3_reduced$models$Block, show.time = "none", resamp = "pit.trap")
+full_anova_block_AM3_reduced
+```
+
+
 
 
 
