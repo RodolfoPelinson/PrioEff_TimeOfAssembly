@@ -1,0 +1,268 @@
+---
+title: "Species effects"
+author: "Rodolfo Pelinson"
+date: "`r Sys.Date()`"
+output: 
+  github_document: 
+    fig_width: 10
+    fig_height: 8
+editor_options: 
+  chunk_output_type: console
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+```{r, warning=FALSE, echo = FALSE, include=FALSE}
+dir<-("C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly")
+```
+
+
+## Loading packages and functions
+
+
+```{r, warning=FALSE, message = FALSE}
+
+source(paste(sep = "/",dir,"functions/pairwise_gllvm.R"))
+source(paste(sep = "/",dir,"functions/pairwise_mvabund.R"))
+source(paste(sep = "/",dir,"functions/my.anova.gllvm.R"))
+source(paste(sep = "/",dir,"functions/My_coefplot.R"))
+source(paste(sep = "/",dir,"functions/remove_sp.R"))
+source(paste(sep = "/",dir,"functions/extract_mles.R"))
+source(paste(sep = "/",dir,"functions/my_ordiplot.R"))
+source(paste(sep = "/",dir,"functions/get_scaled_lvs.R"))
+source(paste(sep = "/",dir,"functions/text_contour.R"))
+source(paste(sep = "/",dir,"functions/letters.R"))
+
+```
+
+```{r, warning=FALSE, message = FALSE}
+
+library(vegan)
+library(gllvm)
+library(mvabund)
+library(DHARMa)
+library(glmmTMB)
+library(vioplot)
+library(yarrr)
+library(colorspace)
+
+```
+
+
+```{r}
+sessionInfo()
+```
+
+## Loading and preparing data
+
+
+```{r, message = FALSE, warning=FALSE}
+source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
+```
+
+
+
+
+
+```{r, message = FALSE, warning=FALSE}
+comm_all_drop_atrasado <- comm_all[Exp_design_all$treatments != "atrasado",]
+Exp_design_all_drop_atrasado <- Exp_design_all[Exp_design_all$treatments != "atrasado",]
+
+ncol(comm_all_drop_atrasado)
+comm_all_drop_atrasado_rm <- remove_sp(comm_all_drop_atrasado, 10)
+ncol(comm_all_drop_atrasado_rm)
+
+Exp_design_all_drop_atrasado$treatments_AM <- paste(Exp_design_all_drop_atrasado$treatments, Exp_design_all_drop_atrasado$AM, sep="_")
+
+Exp_design_all_drop_atrasado$AM_numeric <- as.numeric(Exp_design_all_drop_atrasado$AM)
+
+Exp_design_all_drop_atrasado$treatments <- as.factor(Exp_design_all_drop_atrasado$treatments)
+
+AM_days <- as.numeric(Exp_design_all_drop_atrasado$AM)
+AM_days[AM_days == 1] <- 32
+AM_days[AM_days == 2] <- 80
+AM_days[AM_days == 3] <- 116
+AM_days[AM_days == 4] <- 158
+
+AM_days_sc <- scale(AM_days)
+
+Exp_design_all_drop_atrasado$AM_days_sc <- c(AM_days_sc)
+Exp_design_all_drop_atrasado$AM_days_sc_squared <- c(AM_days_sc)^2
+
+Exp_design_all_drop_atrasado$AM_days <- c(AM_days)
+Exp_design_all_drop_atrasado$AM_days_squared <- c(AM_days)^2
+
+
+comm_pred <- comm_all_drop_atrasado_rm[Exp_design_all_drop_atrasado$AM != 4,]
+comm_resp <- comm_all_drop_atrasado_rm[Exp_design_all_drop_atrasado$AM != 1,]
+
+
+```
+
+
+```{r, cache = TRUE}
+comm_pred_st <- decostand(comm_pred, method = "stand")
+
+colnames(comm_pred_st) <- gsub(" ", "_", colnames(comm_pred_st))
+
+
+comm_resp_mv <- mvabund(comm_resp)
+predictors <- Exp_design_all_drop_atrasado[Exp_design_all_drop_atrasado$AM != "1",]
+
+formula_quad <- as.formula(paste("comm_resp_mv ~ block2 + AM_days_sc + AM_days_sc_squared +", paste(colnames(comm_pred_st), collapse = " + ") ) )
+mod_quad <- manyglm(formula = formula_quad, family="negative.binomial",  data = data.frame(predictors, comm_pred_st), composition = FALSE)
+
+formula_linear <- as.formula(paste("comm_resp_mv ~ block2 + AM_days_sc +", paste(colnames(comm_pred_st), collapse = " + ") ) )
+mod_linear <- manyglm(formula = formula_linear, family="negative.binomial",  data = data.frame(predictors, comm_pred_st), composition = FALSE)
+
+anova_quad <- anova(mod_linear, mod_quad, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_quad
+
+
+###################################################
+
+formula_block <- as.formula(paste("comm_resp_mv ~ block2 + AM_days_sc +", paste(colnames(comm_pred_st), collapse = " + ") ) )
+mod_block <- manyglm(formula = formula_block, family="negative.binomial",  data = data.frame(predictors, comm_pred_st), composition = FALSE)
+
+formula_no_block <- as.formula(paste("comm_resp_mv ~ AM_days_sc +", paste(colnames(comm_pred_st), collapse = " + ") ) )
+mod_no_block <- manyglm(formula = formula_no_block, family="negative.binomial",  data = data.frame(predictors, comm_pred_st), composition = FALSE)
+
+anova_block <- anova(mod_no_block, mod_block, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_block
+
+
+###################################################
+
+formula_time <- as.formula(paste("comm_resp_mv ~ block2 + AM_days_sc +", paste(colnames(comm_pred_st), collapse = " + ") ) )
+mod_time <- manyglm(formula = formula_time, family="negative.binomial",  data = data.frame(predictors, comm_pred_st), composition = FALSE)
+
+formula_no_time <- as.formula(paste("comm_resp_mv ~ block2 +", paste(colnames(comm_pred_st), collapse = " + ") ) )
+mod_no_time <- manyglm(formula = formula_no_time, family="negative.binomial",  data = data.frame(predictors, comm_pred_st), composition = FALSE)
+
+anova_time <- anova(mod_no_time, mod_time, show.time = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_time
+
+
+###################################################
+
+formula_prior <- as.formula(paste("comm_resp_mv ~ block2 + AM_days_sc +", paste(colnames(comm_pred_st), collapse = " + ") ) )
+mod_prior <- manyglm(formula = formula_prior, family="negative.binomial",  data = data.frame(predictors, comm_pred_st), composition = FALSE)
+
+formula_no_prior <- as.formula(paste("comm_resp_mv ~ block2") )
+mod_no_prior <- manyglm(formula = formula_no_prior, family="negative.binomial",  data = data.frame(predictors, comm_pred_st), composition = FALSE)
+
+anova_prior <- anova(mod_no_prior, mod_prior, show.prior = "all", cor.type = "I", test = "LR", resamp = "pit.trap")
+anova_prior
+```
+
+
+
+
+```{r,    fig.width = 10, fig.height = 4.5, dpi = 600}
+mod_prior$coefficients
+
+#Lines are the predictors
+
+coefs <- mod_prior$coefficients[-c(1:4),]
+se <- mod_prior$stderr.coefficients[-c(1:4),]
+CI_lower <-  coefs + se * qnorm(0.025) 
+CI_upper <-  coefs + se * qnorm(0.975) 
+
+
+coefs_sig <- coefs
+
+coefs_sig[(CI_upper < 0 & CI_lower < 0)] <- -1
+coefs_sig[(CI_upper > 0 & CI_lower > 0)] <- 1
+coefs_sig[(CI_upper > 0 & CI_lower < 0) & coefs > 0] <- 0.5
+coefs_sig[(CI_upper > 0 & CI_lower < 0) & coefs < 0] <- -0.5
+
+
+library(yarrr)
+
+sig_coefs_col <- coefs_sig
+sig_coefs_col[coefs_sig == -0.5] <- lighten("firebrick1", amount = 0.85)
+sig_coefs_col[coefs_sig == -1] <- lighten("firebrick1", amount = 0.15)
+sig_coefs_col[coefs_sig == 0.5] <- lighten("dodgerblue3", amount = 0.85)
+sig_coefs_col[coefs_sig == 1] <- lighten("dodgerblue3", amount = 0.15)
+
+#diag_col <- matrix(NA, nrow = nrow(sig_coefs_col), ncol = ncol(sig_coefs_col))
+#colnames(diag_col) <- colnames(sig_coefs_col)
+#rownames(diag_col) <- rownames(sig_coefs_col)
+#for(i in 1:nrow(diag_col)){diag_col[i,i] <- 1}
+
+
+cores_unicas <- unique(as.vector(sig_coefs_col))
+
+matriz_numerica <- matrix(
+  match(sig_coefs_col, cores_unicas), 
+  nrow = nrow(sig_coefs_col), 
+  ncol = ncol(sig_coefs_col)
+)
+
+colnames(matriz_numerica) <- colnames(sig_coefs_col)
+rownames(matriz_numerica) <- rownames(sig_coefs_col)
+
+
+sp_names <- colnames(matriz_numerica)
+sp_names <- gsub("\\.", " ", sp_names)
+
+sp_names[sp_names == "Dendropsophus minutus"] <- "D. minutus"
+sp_names[sp_names == "Scinax fuscovarius"] <- "S. fuscovarius"
+
+sp_names[sp_names == "Dendropsophus_minutus"] <- "D. minutus"
+sp_names[sp_names == "Scinax_fuscovarius"] <- "S. fuscovarius"
+
+sp_font <- rep(3, length(sp_names))
+sp_font[sp_names == "Chironominae"] <- 1
+sp_font[sp_names == "Tanypodinae"] <- 1
+
+
+
+
+
+
+```
+
+
+
+```{r,    fig.width = 7, fig.height = 6, dpi = 600}
+
+
+par(mar = c(12,12,1,1))
+image(y = 1:nrow(sig_coefs_col), x = 1:ncol(sig_coefs_col), z = t(matriz_numerica)[, ncol(matriz_numerica):1], col = cores_unicas, xaxt = "n", yaxt = "n", xlab = "", ylab = "")
+#par(new = TRUE)
+#image(y = 1:nrow(diag_col), x = 1:ncol(diag_col), z = t(diag_col)[, ncol(diag_col):1], col = transparent("grey50", 0), xaxt = "n", yaxt = "n", xlab = "", ylab = "")
+box(type = "o", lwd = 2)
+for(i in 1:nrow(sig_coefs_col)){
+  axis(1, at = (1:ncol(sig_coefs_col))[i], labels = sp_names[i], las = 2, cex.axis = 1, font = sp_font[i])
+}
+
+for(i in 1:ncol(sig_coefs_col)){
+  axis(2, at = (nrow(sig_coefs_col):1)[i], labels = sp_names[i], las = 2, cex.axis = 1, font = sp_font[i])
+}
+
+title(xlab = "Taxa affected", line = 9, cex.lab = 1.25)
+title(ylab = "Taxa affecting", line = 9, cex.lab = 1.25)
+
+for(i in 1:(nrow(sig_coefs_col)-1)){
+  abline(v = i +0.5)
+  abline(h = i +0.5)
+}
+
+for(i in nrow(sig_coefs_col):1){
+  rect(xleft = nrow(sig_coefs_col) - (i-0.5),
+     xright =  nrow(sig_coefs_col) - (i-1.5),
+     ytop = (i+0.5),
+     ybottom = (i-0.5), lwd = 2)
+}
+
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, xlab = "", ylab = "", xlim = c(0,100), ylim = c(0,100), xaxt = "n", yaxt = "n")
+
+legend(x = 0, y = 0, xjust = 0, yjust = 0, fill = cores_unicas, legend = c("Positive effet", "Negative effect", "Positive trend (NS)", "Negative trend (NS)" ), bty = "n", cex = 1.25)
+
+```
+
