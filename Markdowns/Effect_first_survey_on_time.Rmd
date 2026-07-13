@@ -64,9 +64,13 @@ source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
 comm_all_drop_atrasado <- comm_all[Exp_design_all$treatments != "atrasado",]
 Exp_design_all_drop_atrasado <- Exp_design_all[Exp_design_all$treatments != "atrasado",]
 
+Exp_design_drop_atrasado <- Exp_design[Exp_design$treatments != "atrasado",]
+
 ncol(comm_all_drop_atrasado)
 comm_all_drop_atrasado_rm <- remove_sp(comm_all_drop_atrasado, 10)
 ncol(comm_all_drop_atrasado_rm)
+
+
 
 Exp_design_all_drop_atrasado$treatments_AM <- paste(Exp_design_all_drop_atrasado$treatments, Exp_design_all_drop_atrasado$AM, sep="_")
 
@@ -127,7 +131,7 @@ predictors_nmds <- data.frame(Exp_design_all_drop_atrasado, comm_AM1_nmds_st_pre
 ### Testing for effects
 
 
-```{r}
+```{r, cache=TRUE}
 
 nrow(predictors_nmds)
 nrow(comm_all_drop_atrasado_rm)
@@ -347,7 +351,7 @@ high_MDS1_high_MDS2[,,3] <- EF_high_MDS1_high_MDS2
 
 high_MDS1_high_MDS2_mean <- as.data.frame(apply(high_MDS1_high_MDS2, MARGIN = c(1,2), FUN = mean))
 colnames(high_MDS1_high_MDS2_mean) <- colnames(AB_high_MDS1_high_MDS2)
-high_MDS1_high_MDS2_mean
+#high_MDS1_high_MDS2_mean
 
 
 
@@ -365,7 +369,7 @@ low_MDS1_high_MDS2[,,3] <- EF_low_MDS1_high_MDS2
 
 low_MDS1_high_MDS2_mean <- as.data.frame(apply(low_MDS1_high_MDS2, MARGIN = c(1,2), FUN = mean))
 colnames(low_MDS1_high_MDS2_mean) <- colnames(AB_low_MDS1_high_MDS2)
-low_MDS1_high_MDS2_mean
+#low_MDS1_high_MDS2_mean
 
 
 
@@ -382,7 +386,7 @@ high_MDS1_low_MDS2[,,3] <- EF_high_MDS1_low_MDS2
 
 high_MDS1_low_MDS2_mean <- as.data.frame(apply(high_MDS1_low_MDS2, MARGIN = c(1,2), FUN = mean))
 colnames(high_MDS1_low_MDS2_mean) <- colnames(AB_high_MDS1_low_MDS2)
-high_MDS1_low_MDS2_mean
+#high_MDS1_low_MDS2_mean
 
 
 
@@ -398,7 +402,7 @@ low_MDS1_low_MDS2[,,3] <- EF_low_MDS1_low_MDS2
 
 low_MDS1_low_MDS2_mean <- as.data.frame(apply(low_MDS1_low_MDS2, MARGIN = c(1,2), FUN = mean))
 colnames(low_MDS1_low_MDS2_mean) <- colnames(AB_low_MDS1_low_MDS2)
-low_MDS1_low_MDS2_mean
+#low_MDS1_low_MDS2_mean
 
 
 
@@ -411,6 +415,17 @@ low_MDS1_low_MDS2_mean
 
 
 ```{r,    fig.width = 10, fig.height = 12, dpi = 600}
+
+
+col_control <- "#56B4E9"
+col_closed <- "#009E73"
+col_exc_drag <- "#CC79A7"
+col_exc_amph <- "#E69F00"
+
+col_high_1_high_2 <- "#290AD8" #blue dark 
+col_low_1_high_2 <- "#D82632" #red dark
+col_high_1_low_2 <- "#72D9FF" #blue light 
+col_low_1_low_2 <- "#FFAD72" #red light 
 
 sp_names <- colnames(high_MDS1_high_MDS2_mean)
 sp_names <- gsub("\\.", " ", sp_names)
@@ -453,28 +468,28 @@ lines(y = high_MDS1_high_MDS2_mean[,i],                                         
           col= "white", lwd = 3)
 lines(y = high_MDS1_high_MDS2_mean[,i],
           x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
-          col= "#56B4E9", lwd = 2)
+          col= col_high_1_high_2, lwd = 2)
 
 
 lines(y = low_MDS1_high_MDS2_mean[,i],                                                                                                                    x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
           col= "white", lwd = 3)
 lines(y = low_MDS1_high_MDS2_mean[,i],
           x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
-          col= "#009E73", lwd = 2)
+          col= col_low_1_high_2, lwd = 2)
 
 
 lines(y = high_MDS1_low_MDS2_mean[,i],                                                                                                                         x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
           col= "white", lwd = 3)
 lines(y = high_MDS1_low_MDS2_mean[,i],
           x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
-          col= "#CC79A7", lwd = 2)
+          col= col_high_1_low_2, lwd = 2)
 
 
 lines(y = low_MDS1_low_MDS2_mean[,i],                                                                                                                         x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
           col= "white", lwd = 3)
 lines(y = low_MDS1_low_MDS2_mean[,i],
           x = seq(from = min(Exp_design_all_drop_atrasado$AM_days), to = max(Exp_design_all_drop_atrasado$AM_days), length.out = 100),
-          col= "#E69F00", lwd = 2)
+          col= col_low_1_low_2, lwd = 2)
 
 
 axis(1, at = c(32, 80, 116, 158))
@@ -495,7 +510,7 @@ plot(NA, xlim = c(0, 100), ylim = c(0, 100), xaxt = "n", yaxt = "n", xlab = "", 
 legend(legend = c("High nMDS1, high nMDS2",
                  "High nMDS1, low nMDS2",
                   "Low nMDS1, high nMDS2",
-                  "Low nMDS1, low nMDS2"), x = 50, y = 50, bty = "n", lty = 1, lwd = 3, col = c("#56B4E9", "#CC79A7", "#009E73","#E69F00"), xjust = 0.5, yjust = 0.5)
+                  "Low nMDS1, low nMDS2"), x = 50, y = 50, bty = "n", lty = 1, lwd = 3, col = c(col_high_1_high_2, col_high_1_low_2, col_low_1_high_2,col_low_1_low_2), xjust = 0.5, yjust = 0.5)
 
   
 #dev.off()
@@ -591,7 +606,7 @@ comm_trajectories <- rbind(high_MDS1_high_MDS2_mean, low_MDS1_high_MDS2_mean, hi
 
 comm_trajectories_relative <- decostand(comm_trajectories, method = "total", MARGIN = 2)
 
-set.seed(5); nmds_comm_trajectories <- metaMDS(comm_trajectories_relative, distance = "bray", k = 2, trymax  = 100, try = 100, engine = "monoMDS", autotransform  = FALSE)
+set.seed(5); nmds_comm_trajectories <- metaMDS(comm_trajectories_relative, distance = "bray", k = 2, trymax  = 50, try = 100, engine = "monoMDS", autotransform  = FALSE)
 
 nmds_comm_trajectories
 ```
@@ -628,13 +643,24 @@ find_day <- function(day, min, max, length = 100){
 
 
 ```{r,    fig.width = 10, fig.height = 4.5, dpi = 600}
-comm_AM1_nmds
 species <- nmds_comm_AM1_rm_total$species
 
 sp_names <- rownames(species)
 sp_names <- gsub("\\.", " ", sp_names)
 
+sp_font <- rep(3, length(sp_names))
+sp_font[sp_names == "Chironominae"] <- 1
+sp_font[sp_names == "Tanypodinae"] <- 1
 
+col_control <- "#56B4E9"
+col_closed <- "#009E73"
+col_exc_drag <- "#CC79A7"
+col_exc_amph <- "#E69F00"
+
+col_high_1_high_2 <- "#290AD8" #blue dark 
+col_low_1_high_2 <- "#D82632" #red dark
+col_high_1_low_2 <- "#72D9FF" #blue light 
+col_low_1_low_2 <- "#FFAD72" #red light 
 
 #svg(filename = "Plots/Community structure analysis/community_trajectories.svg", width = 10, height = 4.5, pointsize = 12)
 
@@ -661,10 +687,11 @@ plot(comm_AM1_nmds[,1], comm_AM1_nmds[,2], xlim = c(xmin,xmax), ylim = c(ymin, y
      type = "n", xaxt = "n", yaxt = "n", ylab = "", xlab = "")
 
 
-rect(xleft = 0, ybottom = 0, xright = xmax*1.2, ytop = ymax*1.2 ,col = transparent("#56B4E9", trans.val = 0.75), border = "white", lwd = 4)
-rect(xleft = xmin*1.2, ybottom = ymin*1.2, xright = 0, ytop = 0,col = transparent("#E69F00", trans.val = 0.75), border = "white", lwd = 4)
-rect(xleft = 0, ybottom = ymin*1.2, xright = xmax*1.2, ytop = 0,col = transparent("#CC79A7", trans.val = 0.75), border = "white", lwd = 4)
-rect(xleft = xmin*1.2, ybottom = 0, xright = 0, ytop = ymax*1.2,col = transparent("#009E73", trans.val = 0.75), border = "white", lwd = 4)
+
+rect(xleft = 0, ybottom = 0, xright = xmax*1.2, ytop = ymax*1.2 ,col = transparent(col_high_1_high_2, trans.val = 0.6), border = "white", lwd = 4)
+rect(xleft = xmin*1.2, ybottom = ymin*1.2, xright = 0, ytop = 0,col = transparent(col_low_1_low_2, trans.val = 0.6), border = "white", lwd = 4)
+rect(xleft = 0, ybottom = ymin*1.2, xright = xmax*1.2, ytop = 0,col = transparent(col_high_1_low_2, trans.val = 0.6), border = "white", lwd = 4)
+rect(xleft = xmin*1.2, ybottom = 0, xright = 0, ytop = ymax*1.2,col = transparent(col_low_1_high_2, trans.val = 0.6), border = "white", lwd = 4)
 
 
 abline(h = 0, v = 0, lty = 2)
@@ -676,21 +703,44 @@ library(shape)
 #pal <- col_numeric(palette = c("white", "black"), domain = urb, na.color = "grey50", alpha = FALSE, reverse = FALSE)
 #col <-pal(urb)
 
-points(comm_AM1_nmds[,1],comm_AM1_nmds[,2], col = "grey70", bg = "white", pch = 16, cex = 1.5)
+#points(comm_AM1_nmds[,1],comm_AM1_nmds[,2], col = "grey70", bg = "white", pch = 16, cex = 1.5)
 
-Arrows(x0 <- rep(0, nrow(species)),
-       y0 <- rep(0, nrow(species)),
-       x1 <- species[,1],
-       y1 <- species[,2], arr.type = "triangle", arr.length = 0.4, col = "#C49C94", lwd = 1.5)
 
-text(x = species[,1]*1.2, y = species[,2]*1.2, labels = sp_names, cex = 0.8, col = "black", font = 2)
+points(comm_AM1_nmds[Exp_design_drop_atrasado$treatments == "controle",1],comm_AM1_nmds[Exp_design_drop_atrasado$treatments == "controle",2], col = "white", bg = col_control, pch = 21, cex = 1.5)
+
+points(comm_AM1_nmds[Exp_design_drop_atrasado$treatments == "fechado",1],comm_AM1_nmds[Exp_design_drop_atrasado$treatments == "fechado",2], col = "white", bg = col_closed, pch = 21, cex = 1.5)
+
+points(comm_AM1_nmds[Exp_design_drop_atrasado$treatments == "fechado_dia",1],comm_AM1_nmds[Exp_design_drop_atrasado$treatments == "fechado_dia",2], col = "white", bg = col_exc_drag, pch = 21, cex = 1.5)
+
+points(comm_AM1_nmds[Exp_design_drop_atrasado$treatments == "fechado_noite",1],comm_AM1_nmds[Exp_design_drop_atrasado$treatments == "fechado_noite",2], col = "white", bg = col_exc_amph, pch = 21, cex = 1.5)
+
+#Arrows(x0 <- rep(0, nrow(species)),
+#       y0 <- rep(0, nrow(species)),
+#       x1 <- species[,1],
+#       y1 <- species[,2], arr.type = "triangle", arr.length = 0.4, col = "#C49C94", lwd = 1.5)
+
+
+for(i in 1:length(sp_names)){
+  text_contour(x = species[i,1],
+       y = species[i,2], labels = sp_names[i], cex = 0.8, col = "white", thick = 0.004, font = sp_font[i])
+  text(x = species[i,1], y = species[i,2], labels = sp_names[i], cex = 0.8, col = "black", font = sp_font[i])
+}
+
 
 axis(1, cex.axis = 1)
 axis(2, cex.axis = 1, las = 2)
 title(xlab = "nMDS 1", cex.lab = 1.2, line = 3)
 title(ylab = "nMDS 2", cex.lab = 1.2, line = 3)
 #title(main = "Morphological traits", line = 0.5, adj = 0, cex.main = 1.5)
-letters(x = 10, y = 97, "a)", cex = 1.5)
+
+par(new= TRUE, bty = "n")
+plot(NA, ylab = "", xlab = "", xlim = c(0,100), ylim = c(0,100), xaxt = "n", yaxt = "n")
+
+legend(x = 105, y = -5, xjust = 1, yjust = 0, legend = c("Control", "Both excluded", "Dragonfly exc.", "Amphibian exc."), bty = "n", bg = "transparent", pch = 21, pt.bg = c(col_control, col_closed, col_exc_drag, col_exc_amph), col = "white", cex = 0.8, pt.cex = 1.2)
+
+letters(x = 0, y = 97, "a)", cex = 1.5)
+
+
 
 
 screen(2)
@@ -703,17 +753,18 @@ xmax <- max(c(points_high_MDS1_high_MDS2[,1], points_low_MDS1_high_MDS2[,1], poi
 ymin <- min(c(points_high_MDS1_high_MDS2[,2], points_low_MDS1_high_MDS2[,2], points_high_MDS1_low_MDS2[,2], points_low_MDS1_low_MDS2[,2],species_pred[,2]))*1.1
 ymax <- max(c(points_high_MDS1_high_MDS2[,2], points_low_MDS1_high_MDS2[,2], points_high_MDS1_low_MDS2[,2], points_low_MDS1_low_MDS2[,2],species_pred[,2]))*1.1
 
-par(mar = c(4, 4, 1, 1))
+par(mar = c(4, 4, 1, 1), bty = "o")
   
 plot(NA, xlim = c(xmin, xmax), ylim = c(ymin, ymax), xlab = "", ylab = "", xaxt = "n", yaxt = "n")
 
-lines(x = points_high_MDS1_high_MDS2[,1], y = points_high_MDS1_high_MDS2[,2], lwd = 3, lty = 1, col = "#56B4E9") #controle
+lines(x = points_high_MDS1_high_MDS2[,1], y = points_high_MDS1_high_MDS2[,2], lwd = 3, lty = 1, col = col_high_1_high_2) #controle
 
-lines(x = points_low_MDS1_high_MDS2[,1], y = points_low_MDS1_high_MDS2[,2], lwd = 3, lty = 1, col = "#009E73") #atrasado
+lines(x = points_low_MDS1_high_MDS2[,1], y = points_low_MDS1_high_MDS2[,2], lwd = 3, lty = 1, col = col_low_1_high_2) #atrasado
 
-lines(x = points_high_MDS1_low_MDS2[,1], y = points_high_MDS1_low_MDS2[,2], lwd = 3, lty = 1, col = "#CC79A7") #fechado
+lines(x = points_high_MDS1_low_MDS2[,1], y = points_high_MDS1_low_MDS2[,2], lwd = 3, lty = 1, col = col_high_1_low_2) #fechado
 
-lines(x = points_low_MDS1_low_MDS2[,1], y = points_low_MDS1_low_MDS2[,2], lwd = 3, lty = 1, col = "#E69F00") #fechado
+lines(x = points_low_MDS1_low_MDS2[,1], y = points_low_MDS1_low_MDS2[,2], lwd = 3, lty = 1, col = col_low_1_low_2) #fechado
+
 
 
 
@@ -725,31 +776,31 @@ lines(x = points_low_MDS1_low_MDS2[,1], y = points_low_MDS1_low_MDS2[,2], lwd = 
 
 points(x = points_high_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),1],
        y = points_high_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_high_1_high_2, lwd = 3, cex = 3.5)
 
 text(x = points_high_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),1],
-       y = points_high_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, col = "#56B4E9", font = 2)
+       y = points_high_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, col = col_high_1_high_2, font = 2)
 
 points(x = points_high_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),1],
        y = points_high_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_high_1_high_2, lwd = 3, cex = 3.5)
 
 text(x = points_high_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),1],
-       y = points_high_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, col = "#56B4E9", font = 2)
+       y = points_high_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, col = col_high_1_high_2, font = 2)
 
 points(x = points_high_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),1],
        y = points_high_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_high_1_high_2, lwd = 3, cex = 3.5)
 
 text(x = points_high_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),1],
-       y = points_high_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, col = "#56B4E9", font = 2)
+       y = points_high_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, col = col_high_1_high_2, font = 2)
 
 points(x = points_high_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),1],
        y = points_high_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#56B4E9", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_high_1_high_2, lwd = 3, cex = 3.5)
 
 text(x = points_high_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),1],
-       y = points_high_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, col = "#56B4E9", font = 2)
+       y = points_high_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, col = col_high_1_high_2, font = 2)
 #################################################
 
 
@@ -757,31 +808,31 @@ text(x = points_high_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),1],
 
 points(x = points_low_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),1],
        y = points_low_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_low_1_high_2, lwd = 3, cex = 3.5)
 
 text(x = points_low_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),1],
-       y = points_low_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, font = 2, col = "#009E73")
+       y = points_low_MDS1_high_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, font = 2, col = col_low_1_high_2)
 
 points(x = points_low_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),1],
        y = points_low_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_low_1_high_2, lwd = 3, cex = 3.5)
 
 text(x = points_low_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),1],
-       y = points_low_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, font = 2, col = "#009E73")
+       y = points_low_MDS1_high_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, font = 2, col = col_low_1_high_2)
 
 points(x = points_low_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),1],
        y = points_low_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_low_1_high_2, lwd = 3, cex = 3.5)
 
 text(x = points_low_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),1],
-       y = points_low_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, font = 2, col = "#009E73")
+       y = points_low_MDS1_high_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, font = 2, col = col_low_1_high_2)
 
 points(x = points_low_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),1],
        y = points_low_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#009E73", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_low_1_high_2, lwd = 3, cex = 3.5)
 
 text(x = points_low_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),1],
-       y = points_low_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, font = 2, col = "#009E73")
+       y = points_low_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, font = 2, col = col_low_1_high_2)
 #################################################
 
 
@@ -790,31 +841,31 @@ text(x = points_low_MDS1_high_MDS2[find_day(day = 158, min = 32, max = 158),1],
 
 points(x = points_high_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),1],
        y = points_high_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#CC79A7", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_high_1_low_2, lwd = 3, cex = 3.5)
 
 text(x = points_high_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),1],
-       y = points_high_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, font = 2, col = "#CC79A7")
+       y = points_high_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, font = 2, col = col_high_1_low_2)
 
 points(x = points_high_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),1],
        y = points_high_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#CC79A7", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_high_1_low_2, lwd = 3, cex = 3.5)
 
 text(x = points_high_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),1],
-       y = points_high_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, font = 2, col = "#CC79A7")
+       y = points_high_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, font = 2, col = col_high_1_low_2)
 
 points(x = points_high_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),1],
        y = points_high_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#CC79A7", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_high_1_low_2, lwd = 3, cex = 3.5)
 
 text(x = points_high_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),1],
-       y = points_high_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, font = 2, col = "#CC79A7")
+       y = points_high_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, font = 2, col = col_high_1_low_2)
 
 points(x = points_high_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),1],
        y = points_high_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#CC79A7", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_high_1_low_2, lwd = 3, cex = 3.5)
 
 text(x = points_high_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),1],
-       y = points_high_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, font = 2, col = "#CC79A7")
+       y = points_high_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, font = 2, col = col_high_1_low_2)
 #################################################
 
 
@@ -825,31 +876,31 @@ text(x = points_high_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),1],
 
 points(x = points_low_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),1],
        y = points_low_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#E69F00", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_low_1_low_2, lwd = 3, cex = 3.5)
 
 text(x = points_low_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),1],
-       y = points_low_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, font = 2, col = "#E69F00")
+       y = points_low_MDS1_low_MDS2[find_day(day = 32, min = 32, max = 158),2], labels = "32", cex = 0.7, font = 2, col = col_low_1_low_2)
 
 points(x = points_low_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),1],
        y = points_low_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#E69F00", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_low_1_low_2, lwd = 3, cex = 3.5)
 
 text(x = points_low_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),1],
-       y = points_low_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, font = 2, col = "#E69F00")
+       y = points_low_MDS1_low_MDS2[find_day(day = 80, min = 32, max = 158),2], labels = "80", cex = 0.7, font = 2, col = col_low_1_low_2)
 
 points(x = points_low_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),1],
        y = points_low_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#E69F00", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_low_1_low_2, lwd = 3, cex = 3.5)
 
 text(x = points_low_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),1],
-       y = points_low_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, font = 2, col = "#E69F00")
+       y = points_low_MDS1_low_MDS2[find_day(day = 116, min = 32, max = 158),2], labels = "116", cex = 0.7, font = 2, col = col_low_1_low_2)
 
 points(x = points_low_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),1],
        y = points_low_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),2],
-       pch = 21, bg = "white", col = "#E69F00", lwd = 3, cex = 3.5)
+       pch = 21, bg = "white", col = col_low_1_low_2, lwd = 3, cex = 3.5)
 
 text(x = points_low_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),1],
-       y = points_low_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, font = 2, col = "#E69F00")
+       y = points_low_MDS1_low_MDS2[find_day(day = 158, min = 32, max = 158),2], labels = "158", cex = 0.7, font = 2, col = col_low_1_low_2)
 #################################################
 
 
@@ -882,7 +933,7 @@ axis(2, cex.axis = 1, las = 2)
 title(xlab = "nMDS 1", line = 3, cex.lab = 1.2)
 title(ylab = "nMDS 2", line = 3, cex.lab = 1.2)
 
-letters(x = 10, y = 97, "b)", cex = 1.5)
+letters(x = 0, y = 97, "b)", cex = 1.5)
 
 
 #par(new = TRUE)
@@ -905,7 +956,7 @@ letters(x = 10, y = 97, "b)", cex = 1.5)
 
 ### Testing for effects
 
-```{r}
+```{r, cache=TRUE}
 
 nrow(predictors_nmds)
 nrow(comm_all_drop_atrasado_rm)
