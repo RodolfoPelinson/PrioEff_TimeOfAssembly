@@ -1,0 +1,1003 @@
+---
+title: "Supporting Information 5 - Analysis of the effect of environmental variability, community size, alpha and gamma diversity on community variability"
+author: "Rodolfo Pelinson"
+date: "2026-04-12"
+output: github_document
+editor_options: 
+  chunk_output_type: console
+---
+
+
+## Loading packages and functions
+
+
+```{r, warning=FALSE, echo = FALSE, include=FALSE}
+dir<-("C:/Users/rodol/OneDrive/repos/PrioEff_TimeOfAssembly")
+```
+
+```{r, warning=FALSE, message = FALSE}
+
+source(paste(sep = "/",dir,"functions/remove_sp.R"))
+source(paste(sep = "/",dir,"functions/get_scaled_lvs.R"))
+source(paste(sep = "/",dir,"functions/text_contour.R"))
+source(paste(sep = "/",dir,"functions/letters.R"))
+
+```
+
+```{r, warning=FALSE, message = FALSE}
+
+library(vegan)
+library(gllvm)
+library(mvabund)
+library(DHARMa)
+library(glmmTMB)
+library(vioplot)
+library(yarrr)
+library(colorspace)
+library(iNEXT)
+library(iNEXT.beta3D)
+library(iNEXT.3D)
+library(shape)
+library(car)
+
+```
+
+
+```{r}
+sessionInfo()
+```
+
+## Loading and preparing data
+
+
+```{r, message = FALSE, warning=FALSE}
+source(paste(sep = "/",dir,"ajeitando_planilhas.R"))
+beta_data <- read.csv(paste(sep = "/",dir,"data/beta_data.csv"))
+```
+
+
+```{r}
+
+#Now excluding the late treatment because it complicate things
+comm_all_2 <- comm_all[Exp_design_all$treatments != "atrasado",]
+Exp_design_all_2 <- Exp_design_all[Exp_design_all$treatments != "atrasado",]
+
+comm_all_2 <- remove_sp(comm_all_2, 0)
+
+ncol(comm_all_2)
+
+
+nrow(comm_all_2)
+nrow(Exp_design_all_2)
+
+
+ID <-  as.factor(Exp_design_all_2$sites)
+
+AM_by_block <- interaction(as.factor(Exp_design_all_2$block), as.factor( Exp_design_all_2$AM))
+
+
+Exp_design_all_2$AM <- as.factor(Exp_design_all_2$AM)
+Exp_design_all_2$AM_numeric <- as.numeric(Exp_design_all_2$AM)
+Exp_design_all_2$AM_numeric_quad <- Exp_design_all_2$AM_numeric^2
+
+
+Exp_design_all_2$AM_days <- Exp_design_all_2$AM_numeric
+
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_numeric==1] <- 32
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_numeric==2] <- 80
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_numeric==3] <- 116
+Exp_design_all_2$AM_days[Exp_design_all_2$AM_numeric==4] <- 158
+
+Exp_design_all_2$AM_days_st <- scale(Exp_design_all_2$AM_days)
+attr_AM_days <- attributes(Exp_design_all_2$AM_days_st)
+Exp_design_all_2$AM_days_st <- Exp_design_all_2$AM_days_st[,1]
+
+unscale <- function(x, atributes, reverse = FALSE){
+  if(isTRUE(reverse)){
+      x <- (x - atributes$`scaled:center`) / atributes$`scaled:scale` 
+  }else{
+      x <- (x * atributes$`scaled:scale`) + atributes$`scaled:center`
+  }
+  return(x)
+}
+
+Exp_design_all_2$AM_days_quad <- Exp_design_all_2$AM_days^2
+Exp_design_all_2$AM_days_st_quad <- Exp_design_all_2$AM_days_st^2
+
+
+```
+
+# Effect of Time on tichness, community size and gamma diversity
+
+### Richness
+
+```{r}
+
+
+richness <- rowSums(decostand(comm_all_2, method = "pa"))
+#richness_null <- rowSums(decostand(null_com, method = "pa"))
+
+
+mod_rich_null<- glmmTMB(richness ~ 1 + (1|block2/sites), data = Exp_design_all_2, family ="gaussian")
+mod_rich_day <- glmmTMB(richness ~ AM_days_st + (1|block2/sites), data = Exp_design_all_2, family ="gaussian")
+mod_rich_day_quad <- glmmTMB(richness ~ AM_days_st_quad + AM_days_quad + (1|block2/sites), data = Exp_design_all_2, family ="gaussian")
+
+anova_rich <- anova(mod_rich_null, mod_rich_day, mod_rich_day_quad)
+plot(simulateResiduals(mod_rich_day_quad))
+anova_rich
+
+```
+
+
+### Community size
+
+```{r}
+
+abundance <- rowSums(comm_all_2)
+
+#abundance_10 <- abundance/10
+
+mod_abundance_null<- glmmTMB(abundance ~ 1 + (1|block2/sites), data = Exp_design_all_2, family ="nbinom2")
+mod_abundance_day <- glmmTMB(abundance ~ AM_days_st + (1|block2/sites), data = Exp_design_all_2, family ="nbinom2", control=glmmTMBControl(optimizer=optim,
+               optArgs=list(method="BFGS")))
+mod_abundance_day_quad <- glmmTMB(abundance ~ AM_days_st + AM_days_st_quad + (1|block2/sites), data = Exp_design_all_2, family ="nbinom2")
+plot(simulateResiduals(mod_abundance_day_quad))
+
+anova_abundance <- anova(mod_abundance_null, mod_abundance_day, mod_abundance_day_quad)
+
+anova_abundance
+
+
+new_data_days <- data.frame(AM_days_st = seq(from = min(Exp_design_all_2$AM_days_st), to = max(Exp_design_all_2$AM_days_st), length.out = 100),
+                            AM_days_st_quad = seq(from = min(Exp_design_all_2$AM_days_st), to = max(Exp_design_all_2$AM_days_st), length.out = 100)^2)
+
+predicted_ab_quad <- predict(mod_abundance_day_quad, newdata = new_data_days, se.fit = TRUE, re.form = NA)
+predicted_ab_quad$upper <- exp(predicted_ab_quad$fit + predicted_ab_quad$se.fit * qnorm(0.975))
+predicted_ab_quad$lower <- exp(predicted_ab_quad$fit + predicted_ab_quad$se.fit * qnorm(0.025)) 
+predicted_ab_quad$fit <- exp(predicted_ab_quad$fit)
+
+
+```
+
+
+
+### Gamma diversity
+
+```{r, cache = TRUE}
+#Gama
+gamma <- aggregate(comm_all_2, by = list(Exp_design_all_2$AM), FUN = sum)
+
+rownames(gamma) <- gamma[,1]
+gamma <- gamma[,-1]
+
+comm_AM1 <- comm_all_2[Exp_design_all_2$AM == 1,]
+comm_AM2 <- comm_all_2[Exp_design_all_2$AM == 2,]
+comm_AM3 <- comm_all_2[Exp_design_all_2$AM == 3,]
+comm_AM4 <- comm_all_2[Exp_design_all_2$AM == 4,]
+
+comm_AM1 <- remove_sp(comm_AM1, 0)
+comm_AM2 <- remove_sp(comm_AM2, 0)
+comm_AM3 <- remove_sp(comm_AM3, 0)
+comm_AM4 <- remove_sp(comm_AM4, 0)
+
+rownames(comm_AM1) <- Exp_design$sites[Exp_design$treatments != "atrasado"]
+rownames(comm_AM2) <- Exp_design$sites[Exp_design$treatments != "atrasado"]
+rownames(comm_AM3) <- Exp_design$sites[Exp_design$treatments != "atrasado"]
+rownames(comm_AM4) <- Exp_design$sites[Exp_design$treatments != "atrasado"]
+
+com_tempos <- list(t(comm_AM1), t(comm_AM2), t(comm_AM3), t(comm_AM4))
+
+inext_coverage_0 <- iNEXTbeta3D(com_tempos, datatype = "abundance", q = 0, diversity = "TD",   base = "coverage")
+inext_coverage_0$Dataset_1$gamma
+inext_coverage_0$Dataset_2$gamma
+inext_coverage_0$Dataset_3$gamma
+inext_coverage_0$Dataset_4$gamma
+
+inext_coverage_0$Dataset_1$alpha
+inext_coverage_0$Dataset_2$alpha
+inext_coverage_0$Dataset_3$alpha
+inext_coverage_0$Dataset_4$alpha
+
+
+inext_coverage_2 <- iNEXTbeta3D(com_tempos, datatype = "abundance", q = 2, diversity = "TD",   base = "coverage")
+inext_coverage_2$Dataset_1$gamma
+inext_coverage_2$Dataset_2$gamma
+inext_coverage_2$Dataset_3$gamma
+inext_coverage_2$Dataset_4$gamma
+
+inext_coverage_4 <- iNEXTbeta3D(com_tempos, datatype = "abundance", q = 4, diversity = "TD",   base = "coverage")
+inext_coverage_4$Dataset_1$gamma
+inext_coverage_4$Dataset_2$gamma
+inext_coverage_4$Dataset_3$gamma
+inext_coverage_4$Dataset_4$gamma
+
+inext_coverage_estimated_0 <- iNEXTbeta3D(com_tempos, datatype = "abundance", q = 0, diversity = "TD",   base = "coverage", level = 0.997, nboot = 100)
+inext_coverage_estimated_0$Dataset_1$gamma
+inext_coverage_estimated_0$Dataset_2$gamma
+inext_coverage_estimated_0$Dataset_3$gamma
+inext_coverage_estimated_0$Dataset_4$gamma
+
+inext_coverage_estimated_0$Dataset_1$alpha
+inext_coverage_estimated_0$Dataset_2$alpha
+inext_coverage_estimated_0$Dataset_3$alpha
+inext_coverage_estimated_0$Dataset_4$alpha
+
+
+inext_coverage_estimated_2 <- iNEXTbeta3D(com_tempos, datatype = "abundance", q = 2, diversity = "TD",   base = "coverage", level = 0.997, nboot = 100)
+inext_coverage_estimated_2$Dataset_1$gamma
+inext_coverage_estimated_2$Dataset_2$gamma
+inext_coverage_estimated_2$Dataset_3$gamma
+inext_coverage_estimated_2$Dataset_4$gamma
+
+inext_coverage_estimated_2$Dataset_1$alpha
+inext_coverage_estimated_2$Dataset_2$alpha
+inext_coverage_estimated_2$Dataset_3$alpha
+inext_coverage_estimated_2$Dataset_4$alpha
+
+#inext_estimate <- estimate3D(com_tempos, datatype = "abundance", base = "coverage", level = 0.999, diversity = "TD")
+
+
+```
+
+
+### Plots
+
+```{r,   fig.width = 3, fig.height = 8, dpi = 600, dev.args= list(pointsize=12)}
+
+#pdf("Plots/Community structure analysis/size_alfa_gama.pdf", width = 3, height = 8, pointsize = 12)
+
+#predicted_dev <- predict(mod_dev_am_num, newdata = new_data, se.fit = TRUE, re.form = NA)
+#predicted_dev$upper <- predicted_dev$fit + predicted_dev$se.fit * 1.96
+#predicted_dev$lower <- predicted_dev$fit- predicted_dev$se.fit * 1.96 
+par(mfrow = c(3,1), xpd = NA)
+
+par(mar  = c(4,5,1,1), bty = "l")
+plot(abundance ~ jitter(AM_days_st, 1),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n",  xlim = unscale(x = c(20,170), atributes = attr_AM_days, reverse = TRUE), xaxs = "i" )#, ylim = c(-3,5),)
+
+polygon(x = c(new_data_days$AM_days_st[1:100], new_data_days$AM_days_st[100:1]),
+        y = c(predicted_ab_quad$upper[1:100], predicted_ab_quad$lower[100:1]), col = transparent("grey50", trans.val = 0.5), border = FALSE) 
+
+points(abundance ~ jitter(AM_days_st, 1), pch = 21, col= "black",bg = transparent("orchid3", trans.val = 0.5), cex = 1.25, data = Exp_design_all_2)
+lines(x = new_data_days$AM_days_st,y = predicted_ab_quad$fit, col = "black", lwd = 2)
+title(ylab = "Total abundance", cex.lab = 1.25, line= 2.25)
+axis(1, at = unscale(x = c(32,80,116,158), atributes = attr_AM_days, reverse = TRUE), labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+
+
+par(mar  = c(4,5,1,1), bty = "l")
+plot(richness ~ jitter(AM_days_st, 1),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n"
+     ,  xlim = unscale(x = c(20,170), atributes = attr_AM_days, reverse = TRUE), xaxs = "i", ylim = c(0, 10))#, ylim = c(-3,5),)
+
+#polygon(x = c(new_data$AM_numeric[1:100], new_data$AM_numeric[100:1]),
+#        y = c(predicted_dev$upper[1:100], predicted_dev$lower[100:1]), col = transparent("grey50", trans.val = 0.5), border = FALSE) 
+
+points(richness ~ jitter(AM_days_st, 1), pch = 21, col= "black",bg = transparent("darkgoldenrod3", trans.val = 0.5), cex = 1.25, data = Exp_design_all_2)
+#lines(x = new_data$AM_numeric,y = predicted_dev$fit, col = "black", lwd = 2)
+title(ylab = "Alpha diversity", cex.lab = 1.25, line= 2.25)
+axis(1, at = unscale(x = c(32,80,116,158), atributes = attr_AM_days, reverse = TRUE), labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+
+
+
+
+
+
+par(mar  = c(4,5,1,1), bty = "l")
+plot(NA, ylim = c(8,35), xlim = c(20,170), xaxt = "n",  ylab = "", xlab = "")
+Arrows(x0 = c(32,80,116,158),
+       x1 = c(32,80,116,158),
+       y0 = c(inext_coverage_estimated_0$Dataset_1$gamma$LCL,
+              inext_coverage_estimated_0$Dataset_2$gamma$LCL,
+              inext_coverage_estimated_0$Dataset_3$gamma$LCL,
+              inext_coverage_estimated_0$Dataset_4$gamma$LCL),
+       y1 = c(inext_coverage_estimated_0$Dataset_1$gamma$UCL,
+              inext_coverage_estimated_0$Dataset_2$gamma$UCL,
+              inext_coverage_estimated_0$Dataset_3$gamma$UCL,
+              inext_coverage_estimated_0$Dataset_4$gamma$UCL),
+       arr.type = "T", code = 3, lwd = 2, col = "grey40")
+points(x = c(32,80,116,158), y = c(inext_coverage_estimated_0$Dataset_1$gamma$Gamma,
+                                   inext_coverage_estimated_0$Dataset_2$gamma$Gamma,
+                                   inext_coverage_estimated_0$Dataset_3$gamma$Gamma,
+                                   inext_coverage_estimated_0$Dataset_4$gamma$Gamma), pch = 16, cex = 2)
+
+title(ylab = "Gamma diversity", cex.lab = 1.25, line= 2.25)
+axis(1, at = c(32,80,116,158), labels = c("32", "80", "116", "158"))
+
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+letters(x = 5, y = 97, "c)", cex = 1.5)
+
+#dev.off()
+
+```
+
+
+
+
+
+# Effect of community size, alpha and gamma diversity on observed and expected beta-diversity
+
+```{r}
+beta_data$alpha <- richness
+beta_data$size <- abundance
+
+gamma <- c(rep(inext_coverage_estimated_0$Dataset_1$gamma$Gamma, length(unique(beta_data$sites))),
+rep(inext_coverage_estimated_0$Dataset_2$gamma$Gamma, length(unique(beta_data$sites))),
+rep(inext_coverage_estimated_0$Dataset_3$gamma$Gamma, length(unique(beta_data$sites))),
+rep(inext_coverage_estimated_0$Dataset_4$gamma$Gamma, length(unique(beta_data$sites))))
+
+beta_data$gamma <- gamma
+
+beta_data$size <- scale(beta_data$size)
+beta_data$alpha <- scale(beta_data$alpha)
+beta_data$gamma <- scale(beta_data$gamma)
+
+```
+
+### Models
+```{r}
+
+cor(beta_data[,colnames(beta_data) %in% c("alpha","size","gamma")])
+
+mod_obs_beta <- glmmTMB(observed_distances ~ alpha + size + gamma + (1|block2/sites), data = beta_data, family = gaussian(link = "identity"), control=glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+plot(simulateResiduals(mod_obs_beta))
+Anova(mod_obs_beta)
+
+
+mod_exp_beta <- glmmTMB(expected_distances ~ alpha + size + gamma + (1|block2/sites), data = beta_data, family = gaussian(link = "identity"))
+plot(simulateResiduals(mod_exp_beta))
+Anova(mod_exp_beta)
+
+
+mod_dev_beta <- glmmTMB(deviation_distances ~ alpha + size + gamma + (1|block2/sites), data = beta_data, family = gaussian(link = "identity"))
+plot(simulateResiduals(mod_dev_beta))
+Anova(mod_dev_beta)
+
+
+```
+
+
+### Plots
+
+
+```{r}
+newdata_alpha <- data.frame(alpha = seq(from = min(beta_data$alpha), to = max(beta_data$alpha), length.out = 100),
+                            size = rep(mean(beta_data$size), 100),
+                            gamma = rep(mean(beta_data$gamma), 100))
+
+newdata_size <- data.frame(alpha = rep(mean(beta_data$alpha), 100),
+                            size = seq(from = min(beta_data$size), to = max(beta_data$size), length.out = 100),
+                            gamma = rep(mean(beta_data$gamma), 100))
+
+
+predicted_obs_alpha <- predict(mod_obs_beta, newdata = newdata_alpha, se.fit = TRUE, re.form = NA)
+predicted_obs_alpha$upper <- predicted_obs_alpha$fit + predicted_obs_alpha$se.fit * qnorm(0.975)
+predicted_obs_alpha$lower <- predicted_obs_alpha$fit + predicted_obs_alpha$se.fit * qnorm(0.025)
+predicted_obs_alpha$fit <- predicted_obs_alpha$fit
+
+predicted_exp_alpha <- predict(mod_exp_beta, newdata = newdata_alpha, se.fit = TRUE, re.form = NA)
+predicted_exp_alpha$upper <- predicted_exp_alpha$fit + predicted_exp_alpha$se.fit * qnorm(0.975)
+predicted_exp_alpha$lower <- predicted_exp_alpha$fit + predicted_exp_alpha$se.fit * qnorm(0.025)
+predicted_exp_alpha$fit <- predicted_exp_alpha$fit
+
+
+
+predicted_obs_size <- predict(mod_obs_beta, newdata = newdata_size, se.fit = TRUE, re.form = NA)
+predicted_obs_size$upper <- predicted_obs_size$fit + predicted_obs_size$se.fit * qnorm(0.975)
+predicted_obs_size$lower <- predicted_obs_size$fit + predicted_obs_size$se.fit * qnorm(0.025)
+predicted_obs_size$fit <- predicted_obs_size$fit
+
+predicted_exp_size <- predict(mod_exp_beta, newdata = newdata_size, se.fit = TRUE, re.form = NA)
+predicted_exp_size$upper <- predicted_exp_size$fit + predicted_exp_size$se.fit * qnorm(0.975)
+predicted_exp_size$lower <- predicted_exp_size$fit + predicted_exp_size$se.fit * qnorm(0.025)
+predicted_exp_size$fit <- predicted_exp_size$fit
+
+
+
+```
+
+
+
+```{r,   fig.width = 6, fig.height = 6, dpi = 600, dev.args= list(pointsize=10)}
+set.seed(1)
+#svg(file = "plots/Community structure analysis/beta_dataiation.svg", width = 6, height = 3, pointsize = 8)
+
+par(mfrow = c(2,2))
+
+#####################################################################################################################
+
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(observed_distances ~ alpha,
+     data = beta_data, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+polygon(x = c(newdata_alpha$alpha[1:100], newdata_alpha$alpha[100:1]),
+        y = c(predicted_obs_alpha$upper[1:100], predicted_obs_alpha$lower[100:1]), col = transparent("black", trans.val = 0.6), border = FALSE) 
+
+lines(x = newdata_alpha$alpha,y = predicted_obs_alpha$fit, col = "black", lwd = 2)
+
+points(observed_distances ~ alpha, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = beta_data)
+
+title(ylab = "Observed distances", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Alpha diversity (scaled)", cex.lab = 1.25 ,line = 2.25)
+
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+
+
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(expected_distances ~ alpha,
+     data = beta_data, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+polygon(x = c(newdata_alpha$alpha[1:100], newdata_alpha$alpha[100:1]),
+        y = c(predicted_exp_alpha$upper[1:100], predicted_exp_alpha$lower[100:1]), col = transparent("black", trans.val = 0.6), border = FALSE) 
+
+lines(x = newdata_alpha$alpha,y = predicted_exp_alpha$fit, col = "black", lwd = 2)
+
+points(expected_distances ~ alpha, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = beta_data)
+
+title(ylab = "Expected distances", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Alpha diversity (scaled)", cex.lab = 1.25 ,line = 2.25)
+
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+
+
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(observed_distances ~ size,
+     data = beta_data, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+polygon(x = c(newdata_size$size[1:100], newdata_size$size[100:1]),
+        y = c(predicted_obs_size$upper[1:100], predicted_obs_size$lower[100:1]), col = transparent("black", trans.val = 0.6), border = FALSE) 
+
+lines(x = newdata_size$size,y = predicted_obs_size$fit, col = "black", lwd = 2)
+
+points(observed_distances ~ size, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = beta_data)
+
+title(ylab = "Observed distances", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Community size (scaled)", cex.lab = 1.25 ,line = 2.25)
+
+
+letters(x = 5, y = 97, "c)", cex = 1.5)
+
+
+
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(expected_distances ~ size,
+     data = beta_data, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+polygon(x = c(newdata_size$size[1:100], newdata_size$size[100:1]),
+        y = c(predicted_exp_size$upper[1:100], predicted_exp_size$lower[100:1]), col = transparent("black", trans.val = 0.6), border = FALSE) 
+
+lines(x = newdata_size$size,y = predicted_exp_size$fit, col = "black", lwd = 2)
+
+points(expected_distances ~ size, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = beta_data)
+
+title(ylab = "Expected distances", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Community size (scaled)", cex.lab = 1.25 ,line = 2.25)
+
+
+letters(x = 5, y = 97, "d)", cex = 1.5)
+
+
+
+#dev.off()
+```
+
+
+
+
+
+
+
+
+
+
+
+# Environmental variability
+Preparing data
+
+```{r}
+
+Env$AM_match <- rep(NA, nrow(Env))
+
+Env$AM_match[Env$amostragem == 2] <- 1
+Env$AM_match[Env$amostragem == 5] <- 2
+Env$AM_match[Env$amostragem == 7] <- 3
+Env$AM_match[Env$amostragem == 9] <- 4
+
+Env <- Env[is.na(Env$AM_match)==FALSE,]
+
+
+```
+
+Replace temperature information with the HOBOs temperature information, which is much more accurate
+```{r}
+
+hobo_env <- read.csv(paste(sep = "/",dir,"data/hobo_env.csv"))
+
+index_env <- interaction(Env$id, Env$AM_match)
+index_hobo <- interaction(hobo_env$ID, hobo_env$AM)
+
+index <- match(index_env, index_hobo)
+hobo_env <- hobo_env[index,]
+
+#data.frame(Env$id, hobo_env$ID, Env$AM_match, hobo_env$AM)
+
+Env$hobo_temp <- hobo_env$temp_mean
+Env$iluminance <- hobo_env$light_mean
+
+
+Env <- Env[,-which(colnames(Env) == "Temperatura")]
+```
+
+
+```{r}
+
+Exp_design_all_2$site_AM <- interaction(Exp_design_all_2$sites, Exp_design_all_2$AM)
+Env$site_AM <- interaction(Env$id, Env$AM_match)
+
+
+Env_2 <- Env[Env$Tratamento != "atrasado",]
+Env_2 <- Env_2[match(Exp_design_all_2$site_AM, Env_2$site_AM),]
+
+nrow(Env_2)
+nrow(Exp_design_all_2)
+```
+
+
+
+Environmental variability
+```{r}
+
+
+only_Env <- Env_2[,colnames(Env_2) %in% c("pH","OD","Condutividade","TDS","hobo_temp","iluminance")]
+
+only_Env_st <- decostand(only_Env, method = "stand")
+
+dist_env <- vegdist(only_Env_st, method = "euclidean")
+
+env_var <- betadisper(dist_env, group = Env_2$AM_match)
+```
+
+
+
+PCA
+```{r}
+pca_env <- rda(only_Env_st)
+
+env_eigenvalues <- pca_env$CA$eig / sum(pca_env$CA$eig)
+env_eigenvalues
+
+env_PCs <- pca_env$CA$u
+
+pca_env$CA$v
+```
+
+
+First PC is basically related to conductivity, total dissolved solids and temperature
+Second PC is basically related to pH
+Third PC is basically related to dissolved oxygen
+
+
+## Test of environmental effect on community variability
+
+Effect of environmental variability on observed community variability
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+Exp_design_all_2$env_var <- env_var$distances
+
+mod_obs_am_num_env <- glmmTMB(beta_data$observed_distances ~ AM_days_st + env_var + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+plot(simulateResiduals(mod_obs_am_num_env))
+Anova(mod_obs_am_num_env)
+
+
+
+
+
+```
+
+
+Effect of environmental predictors on observed community variability
+```{r}
+mod_obs_env_pcs <- glmmTMB(beta_data$observed_distances ~ AM_days_st + (1|block2/sites) + 
+                            env_PCs[,1] +
+                            env_PCs[,2] + 
+                            env_PCs[,3], data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+Anova(mod_obs_env_pcs)
+```
+
+
+
+Effect of environmental variability on beta deviation
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+Exp_design_all_2$env_var <- env_var$distances
+
+mod_dev_am_num_env <- glmmTMB(beta_data$deviation_distances ~ AM_days_st + env_var + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+plot(simulateResiduals(mod_dev_am_num_env))
+Anova(mod_dev_am_num_env)
+
+```
+
+Effect of environmental predictors on beta deviation
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+mod_dev_env_pcs <- glmmTMB(beta_data$deviation_distances ~ AM_days_st + (1|block2/sites) + 
+                            env_PCs[,1] +
+                            env_PCs[,2] + 
+                            env_PCs[,3], data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+plot(simulateResiduals(mod_dev_env_pcs))
+Anova(mod_dev_env_pcs)
+```
+
+
+## Test of the effect of time om environmental parameters
+
+
+Effect of time on environmental variability
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+
+env_var <- env_var$distances
+
+mod_env_null <- glmmTMB(env_var ~ 1 + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+
+mod_env_am_num <- glmmTMB(env_var ~ AM_days_st + (1|block2/sites), data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+
+mod_env_am_num_quad <- glmmTMB(env_var ~ AM_days_st + AM_days_st_quad + (1|block2/sites), data = Exp_design_all_2)
+
+plot(simulateResiduals(mod_env_am_num_quad))
+
+anova_env <- anova(mod_env_null, mod_env_am_num, mod_env_am_num_quad)
+anova_env
+
+```
+
+
+Now environmental PCs
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+
+mod_env1_pcs_null <- glmmTMB(env_PCs[,1] ~ 1 + (1|block2/sites), data = Exp_design_all_2)
+mod_env1_pcs_lin <- glmmTMB(env_PCs[,1] ~ AM_days_st + (1|block2/sites), data = Exp_design_all_2)
+mod_env1_pcs_quad <- glmmTMB(env_PCs[,1] ~ AM_days_st + AM_days_st_quad + (1|block2/sites), data = Exp_design_all_2)
+
+plot(simulateResiduals(mod_env1_pcs_quad))
+
+anova(mod_env1_pcs_null, mod_env1_pcs_lin, mod_env1_pcs_quad)
+```
+
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+
+Exp_design_all_2$AM_days_st_third <- Exp_design_all_2$AM_days_st^3
+
+mod_env2_pcs_null <- glmmTMB(env_PCs[,2] ~ 1 + (1|block2/sites), data = Exp_design_all_2)
+mod_env2_pcs_lin <- glmmTMB(env_PCs[,2] ~ AM_days_st + (1|block2/sites), data = Exp_design_all_2)
+mod_env2_pcs_quad <- glmmTMB(env_PCs[,2] ~ AM_days_st + AM_days_st_quad + (1|block2/sites), data = Exp_design_all_2)
+mod_env2_pcs_third <- glmmTMB(env_PCs[,2] ~ AM_days_st + AM_days_st_quad + AM_days_st_third + (1|block2/sites), data = Exp_design_all_2)
+
+plot(simulateResiduals(mod_env2_pcs_third))
+
+anova(mod_env2_pcs_null, mod_env2_pcs_lin, mod_env2_pcs_quad,mod_env2_pcs_third)
+```
+
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+mod_env3_pcs_null <- glmmTMB(env_PCs[,3] ~ 1 + (1|block2/sites), data = Exp_design_all_2)
+mod_env3_pcs_lin <- glmmTMB(env_PCs[,3] ~ AM_days_st + (1|block2/sites), data = Exp_design_all_2)
+mod_env3_pcs_quad <- glmmTMB(env_PCs[,3] ~ AM_days_st + AM_days_st_quad + (1|block2/sites), data = Exp_design_all_2)
+
+plot(simulateResiduals(mod_env3_pcs_quad))
+
+
+anova(mod_env3_pcs_null, mod_env3_pcs_lin, mod_env3_pcs_quad)
+```
+
+
+## Test of the effect environmental parameters (without the effects of time) on community variability
+
+Basically all environmental predictors vary throughout time. We took the residual of such models e checked if those residuals can explain community variability alongside with time.
+
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+Exp_design_all_2$resid_PC1 <- residuals(mod_env1_pcs_quad)
+Exp_design_all_2$resid_PC2 <- residuals(mod_env2_pcs_third)
+Exp_design_all_2$resid_PC3 <- residuals(mod_env3_pcs_quad)
+
+
+mod_obs_env_pcs <- glmmTMB(beta_data$observed_distances ~ (1|block2/sites) + AM_days_st +
+                            resid_PC1 +
+                            resid_PC2 + 
+                            resid_PC3, data = Exp_design_all_2, control = glmmTMBControl(optimizer=optim, optArgs=list(method="BFGS")))
+plot(simulateResiduals(mod_obs_env_pcs))
+
+Anova(mod_obs_env_pcs)
+
+
+mod_dev_env_pcs <- glmmTMB(beta_data$deviation_distances ~ (1|block2/sites) + AM_days_st +
+                            resid_PC1 +
+                            resid_PC2 + 
+                            resid_PC3, data = Exp_design_all_2)
+plot(simulateResiduals(mod_dev_env_pcs))
+Anova(mod_dev_env_pcs)
+```
+
+
+
+
+### Making predictons
+
+```{r}
+new_data_days$AM_days_st_third <- new_data_days$AM_days_st^3
+
+predicted_env_PC1_time <- predict(mod_env1_pcs_quad, newdata = new_data_days, se.fit = TRUE, re.form = NA)
+predicted_env_PC1_time$upper <- predicted_env_PC1_time$fit + predicted_env_PC1_time$se.fit * qnorm(0.975)
+predicted_env_PC1_time$lower <- predicted_env_PC1_time$fit + predicted_env_PC1_time$se.fit * qnorm(0.025) 
+
+predicted_env_PC2_time <- predict(mod_env2_pcs_third, newdata = new_data_days, se.fit = TRUE, re.form = NA)
+predicted_env_PC2_time$upper <- predicted_env_PC2_time$fit + predicted_env_PC2_time$se.fit * qnorm(0.975)
+predicted_env_PC2_time$lower <- predicted_env_PC2_time$fit + predicted_env_PC2_time$se.fit * qnorm(0.025) 
+
+predicted_env_PC3_time <- predict(mod_env3_pcs_quad, newdata = new_data_days, se.fit = TRUE, re.form = NA)
+predicted_env_PC3_time$upper <- predicted_env_PC3_time$fit + predicted_env_PC3_time$se.fit * qnorm(0.975)
+predicted_env_PC3_time$lower <- predicted_env_PC3_time$fit + predicted_env_PC3_time$se.fit * qnorm(0.025) 
+
+
+
+new_data_obs_PC3 <- new_data_days
+new_data_obs_PC3$resid_PC3 <- seq(from = min(Exp_design_all_2$resid_PC3), to = max(Exp_design_all_2$resid_PC3), length.out = nrow(new_data_obs_PC3))
+new_data_obs_PC3$resid_PC2 <- rep(median(Exp_design_all_2$resid_PC2), nrow(new_data_obs_PC3))
+new_data_obs_PC3$resid_PC1 <- rep(median(Exp_design_all_2$resid_PC1), nrow(new_data_obs_PC3))
+new_data_obs_PC3$AM_days_st <- rep(median(new_data_obs_PC3$AM_days_st), nrow(new_data_obs_PC3))
+new_data_obs_PC3$AM_days_st_quad <- new_data_obs_PC3$AM_days_st^2
+
+
+predicted_obs_PC3 <- predict(mod_obs_env_pcs, newdata = new_data_obs_PC3, se.fit =  TRUE, re.form = NA)
+predicted_obs_PC3$upper <- predicted_obs_PC3$fit + predicted_obs_PC3$se.fit * qnorm(0.975)
+predicted_obs_PC3$lower <- predicted_obs_PC3$fit + predicted_obs_PC3$se.fit * qnorm(0.025) 
+
+predicted_dev_PC3 <- predict(mod_dev_env_pcs, newdata = new_data_obs_PC3, se.fit =  TRUE, re.form = NA)
+predicted_dev_PC3$upper <- predicted_dev_PC3$fit + predicted_dev_PC3$se.fit * qnorm(0.975)
+predicted_dev_PC3$lower <- predicted_dev_PC3$fit + predicted_dev_PC3$se.fit * qnorm(0.025) 
+
+```
+
+
+
+
+
+
+### Plots
+
+#### Environmental variability VS community variability
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+set.seed(1)
+#svg(file = "plots/Community structure analysis/beta_dataiation.svg", width = 6, height = 3, pointsize = 8)
+
+par(mfrow = c(1,2))
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(beta_data$observed_distances ~ env_var,
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+
+points(beta_data$observed_distances[Exp_design_all_2$AM == 1] ~ env_var, pch = 21, col= "black",bg = transparent("grey80", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 1,])
+
+points(beta_data$observed_distances[Exp_design_all_2$AM == 2] ~ env_var, pch = 21, col= "black",bg = transparent("grey50", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 2,])
+
+points(beta_data$observed_distances[Exp_design_all_2$AM == 3] ~ env_var, pch = 21, col= "black",bg = transparent("grey20", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 3,])
+
+points(beta_data$observed_distances[Exp_design_all_2$AM == 4] ~ env_var, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 4,])
+
+title(ylab = "Observed community variability", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Environmental variability", cex.lab = 1.25 ,line = 2.25)
+
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
+
+legend(legend = c("32 days",
+                  "80 days",
+                  "116 days",
+                  "158 days"), x = 100, y = 100, bty = "n", pch = 21, col = "black", pt.bg = c(transparent("grey80", trans.val = 0.6),
+                                                                                              transparent("grey50", trans.val = 0.6),
+                                                                                              transparent("grey20", trans.val = 0.6),
+                                                                                              transparent("black", trans.val = 0.6)), xjust = 1, yjust = 1)
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+#####################################################################################################################
+
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(beta_data$deviation_distances ~ env_var,
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+
+points(beta_data$deviation_distances[Exp_design_all_2$AM == 1] ~ env_var, pch = 21, col= "black",bg = transparent("grey80", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 1,])
+
+points(beta_data$deviation_distances[Exp_design_all_2$AM == 2] ~ env_var, pch = 21, col= "black",bg = transparent("grey50", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 2,])
+
+points(beta_data$deviation_distances[Exp_design_all_2$AM == 3] ~ env_var, pch = 21, col= "black",bg = transparent("grey20", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 3,])
+
+points(beta_data$deviation_distances[Exp_design_all_2$AM == 4] ~ env_var, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 4,])
+
+title(ylab = "Beta deviation", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Environmental variability", cex.lab = 1.25 ,line = 2.25)
+
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+
+#dev.off()
+```
+
+
+
+#### Environmental parameters VS time
+
+```{r,   fig.width = 2, fig.height = 5, dpi = 600, dev.args= list(pointsize=8)}
+set.seed(1)
+#svg(file = "plots/Community structure analysis/beta_dataiation.svg", width = 6, height = 3, pointsize = 8)
+
+par(mfrow = c(3,1))
+
+unique_AM_days_st <- unique(Exp_design_all_2$AM_days_st)
+unique_AM_days_st_orig <- unique(Exp_design_all_2$AM_days_st_orig)
+
+
+par(mar  = c(4,5,1,1), bty = "l", new = FALSE)
+plot(env_PCs[,1] ~ jitter(AM_days_st, 1),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n", xlim = c(min(unique_AM_days_st)*1.25,max(unique_AM_days_st)*1.25),  xaxs = "i")
+
+polygon(x = c(new_data_days$AM_days_st[1:100], new_data_days$AM_days_st[100:1]),
+        y = c(predicted_env_PC1_time$upper[1:100], predicted_env_PC1_time$lower[100:1]), col = transparent("blue", trans.val = 0.6), border = FALSE) 
+
+points(env_PCs[,1] ~ jitter(AM_days_st, 0.5), pch = 21, col= "black",bg = transparent("blue", trans.val = 0.75), cex = 1.1, data = Exp_design_all_2)
+
+lines(x = new_data_days$AM_days_st,y = predicted_env_PC1_time$fit, col = "black", lwd = 2)
+
+title(ylab = "Environment PC1", cex.lab = 1, line= 4)
+title(ylab = "(mostly Conductivity, total", cex.lab = 1, line= 3)
+title(ylab = "dissolved solids and temperature)", cex.lab = 1, line= 2)
+
+axis(1, at = unique_AM_days_st, labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+##############################################################################################
+
+
+
+par(mar  = c(4,5,1,1), bty = "l", new = FALSE)
+plot(env_PCs[,2] ~ jitter(AM_days_st, 1),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n", xlim = c(min(unique_AM_days_st)*1.25,max(unique_AM_days_st)*1.25),  xaxs = "i")
+
+polygon(x = c(new_data_days$AM_days_st[1:100], new_data_days$AM_days_st[100:1]),
+        y = c(predicted_env_PC2_time$upper[1:100], predicted_env_PC2_time$lower[100:1]), col = transparent("blue", trans.val = 0.6), border = FALSE) 
+
+points(env_PCs[,2] ~ jitter(AM_days_st, 0.5), pch = 21, col= "black",bg = transparent("blue", trans.val = 0.75), cex = 1.1, data = Exp_design_all_2)
+
+lines(x = new_data_days$AM_days_st,y = predicted_env_PC2_time$fit, col = "black", lwd = 2)
+
+title(ylab = "Environment PC2", cex.lab = 1, line= 3)
+title(ylab = "(mostly pH)", cex.lab = 1, line= 2)
+
+axis(1, at = unique_AM_days_st, labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+
+
+
+##############################################################################################
+
+
+
+par(mar  = c(4,5,1,1), bty = "l", new = FALSE)
+plot(env_PCs[,3] ~ jitter(AM_days_st, 1),
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n", xlim = c(min(unique_AM_days_st)*1.25,max(unique_AM_days_st)*1.25),  xaxs = "i")
+
+polygon(x = c(new_data_days$AM_days_st[1:100], new_data_days$AM_days_st[100:1]),
+        y = c(predicted_env_PC3_time$upper[1:100], predicted_env_PC3_time$lower[100:1]), col = transparent("blue", trans.val = 0.6), border = FALSE) 
+
+points(env_PCs[,3] ~ jitter(AM_days_st, 0.5), pch = 21, col= "black",bg = transparent("blue", trans.val = 0.75), cex = 1.1, data = Exp_design_all_2)
+
+lines(x = new_data_days$AM_days_st,y = predicted_env_PC3_time$fit, col = "black", lwd = 2)
+
+title(ylab = "Environment PC3", cex.lab = 1, line= 3)
+title(ylab = "(mostly dissolved oxygen)", cex.lab = 1, line= 2)
+
+axis(1, at = unique_AM_days_st, labels = c("32", "80", "116", "158"))
+title(xlab = "Days", cex.lab = 1.25 ,line = 2.25)
+
+letters(x = 5, y = 97, "c)", cex = 1.5)
+```
+
+
+#### Environmental parameters VS community variability
+
+
+```{r,   fig.width = 6, fig.height = 3, dpi = 600, dev.args= list(pointsize=8)}
+set.seed(1)
+#svg(file = "plots/Community structure analysis/beta_dataiation.svg", width = 6, height = 3, pointsize = 8)
+
+par(mfrow = c(1,2))
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(beta_data$observed_distances ~ resid_PC3,
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+polygon(x = c(new_data_obs_PC3$resid_PC3[1:100], new_data_obs_PC3$resid_PC3[100:1]),
+        y = c(predicted_obs_PC3$upper[1:100], predicted_obs_PC3$lower[100:1]), col = transparent("grey20", trans.val = 0.6), border = FALSE) 
+
+points(beta_data$observed_distances[Exp_design_all_2$AM == 1] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey80", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 1,])
+
+points(beta_data$observed_distances[Exp_design_all_2$AM == 2] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey50", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 2,])
+
+points(beta_data$observed_distances[Exp_design_all_2$AM == 3] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey20", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 3,])
+
+points(beta_data$observed_distances[Exp_design_all_2$AM == 4] ~ resid_PC3, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 4,])
+
+lines(x = new_data_obs_PC3$resid_PC3,y = predicted_obs_PC3$fit, col = "black", lwd = 2, lty = 2)
+
+
+title(ylab = "Observed community variability", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Residuals of environmental PC3", cex.lab = 1 ,line = 2)
+title(xlab = "(Dissolved oxygen without temporal effects)", cex.lab = 0.9 ,line = 3)
+
+
+letters(x = 5, y = 97, "a)", cex = 1.5)
+
+#####################################################################################################################
+
+
+par(mar  = c(4,4,1,1), bty = "l", new = FALSE)
+plot(beta_data$deviation_distances ~ resid_PC3,
+     data = Exp_design_all_2, xaxt = "n", ylab = "", xlab = "", type = "n")
+
+polygon(x = c(new_data_obs_PC3$resid_PC3[1:100], new_data_obs_PC3$resid_PC3[100:1]),
+        y = c(predicted_dev_PC3$upper[1:100], predicted_dev_PC3$lower[100:1]), col = transparent("grey20", trans.val = 0.6), border = FALSE) 
+
+points(beta_data$deviation_distances[Exp_design_all_2$AM == 1] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey80", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 1,])
+
+points(beta_data$deviation_distances[Exp_design_all_2$AM == 2] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey50", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 2,])
+
+points(beta_data$deviation_distances[Exp_design_all_2$AM == 3] ~ resid_PC3, pch = 21, col= "black",bg = transparent("grey20", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 3,])
+
+points(beta_data$deviation_distances[Exp_design_all_2$AM == 4] ~ resid_PC3, pch = 21, col= "black",bg = transparent("black", trans.val = 0.6), cex = 1.1, data = Exp_design_all_2[Exp_design_all_2$AM == 4,])
+
+lines(x = new_data_obs_PC3$resid_PC3,y = predicted_dev_PC3$fit, col = "black", lwd = 2, lty = 2)
+
+
+title(ylab = "Beta deviation", cex.lab = 1.25, line= 2.25)
+axis(1)
+title(xlab = "Residuals of environmental PC3", cex.lab = 1 ,line = 2)
+title(xlab = "(Dissolved oxygen without temporal effects)", cex.lab = 0.9 ,line = 3)
+
+par(new = TRUE, mar = c(0,0,0,0), bty = "n")
+plot(NA, ylim = c(0,100), xlim = c(0,100), xaxt = "n", yaxt = "n")
+
+legend(legend = c("32 days",
+                  "80 days",
+                  "116 days",
+                  "158 days"), x = 100, y = 100, bty = "n", pch = 21, col = "black", pt.bg = c(transparent("grey80", trans.val = 0.6),
+                                                                                              transparent("grey50", trans.val = 0.6),
+                                                                                              transparent("grey20", trans.val = 0.6),
+                                                                                              transparent("black", trans.val = 0.6)), xjust = 1, yjust = 1)
+
+letters(x = 5, y = 97, "b)", cex = 1.5)
+#dev.off()
+```
+
+
